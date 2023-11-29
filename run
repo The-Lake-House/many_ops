@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -e
+
+NUM_REPS=5000
+
+OUTPUT_DIR=results
+
+mkdir -p "$OUTPUT_DIR"
+
+for CATALOG in hive iceberg delta; do
+
+    SCHEMA="tpch_$CATALOG"
+
+    if [[ -d "$OUTPUT_DIR/$CATALOG" ]]; then
+        echo "$OUTPUT_DIR/$CATALOG already exists"
+        exit 1
+    fi
+
+    mkdir -p "$OUTPUT_DIR/$CATALOG"/{sar,trace,runtime,minio_du,minio_ls,hms}
+
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.tpch_$CATALOG WITH (location = 's3a://tpch/$CATALOG');"
+
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE IF EXISTS lineitem;'
+
+    if [[ "$CATALOG" == "hive" ]]; then
+        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute "CREATE TABLE lineitem WITH (format = 'parquet') AS SELECT * FROM tpch.tiny.lineitem WITH NO DATA;"
+    else
+        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'CREATE TABLE lineitem AS SELECT * FROM tpch.tiny.lineitem WITH NO DATA;'
+    fi
+
+    # Start sar monitoring
+    sar -o "$OUTPUT_DIR/$CATALOG/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
+    SAR_PID=$!
+
+    sleep 3
+
+    for REP in $(seq -w 1 "$NUM_REPS"); do
+
+        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'INSERT INTO lineitem SELECT * FROM tpch.tiny.lineitem LIMIT 1;' &> /dev/null
+
+        QUERY_ID="${CATALOG}_${REP}_$(openssl rand -hex 4)"
+
+        # Start background tracing
+        mcli admin trace minio > "$OUTPUT_DIR/$CATALOG/trace/$REP" &
+        TRACE_PID=$!
+
+        # Perform query
+        if [[ "$CATALOG" == "iceberg" ]]; then
+            $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --session iceberg.experimental_split_size=107980672B --execute 'SELECT l_linestatus FROM lineitem;' --output-format NULL
+        else
+            $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --execute 'SELECT l_linestatus FROM lineitem;' --output-format NULL
+        fi
+
+        # Stop background tracing
+        kill -SIGINT $TRACE_PID
+
+        # Collect runtime
+        $TRINO_HOME/bin/trino --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/$CATALOG/runtime/$REP"
+
+        # Collect MinIO bucket size and bucket listings
+        mcli du "minio/tpch/$CATALOG" > "$OUTPUT_DIR/$CATALOG/minio_du/$REP"
+        mcli ls -r "minio/tpch/$CATALOG" > "$OUTPUT_DIR/$CATALOG/minio_ls/$REP"
+
+        # Collect HMS SQL dump and size
+        sudo -u postgres pg_dump hms > "$OUTPUT_DIR/$CATALOG/hms/$REP"
+
+        echo "$CATALOG: $REP / $NUM_REPS"
+
+    done
+
+    # Stop sar monitoring
+    kill -SIGINT $SAR_PID
+
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE lineitem;'
+
+done
