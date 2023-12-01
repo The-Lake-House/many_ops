@@ -8,6 +8,10 @@ OUTPUT_DIR=results
 
 mkdir -p "$OUTPUT_DIR"
 
+# Make a copy of the connector config
+mkdir -p "$OUTPUT_DIR/conf"
+cp $TRINO_HOME/etc/catalog/*.properties "$OUTPUT_DIR/conf/"
+
 for CATALOG in hive iceberg delta; do
 
     SCHEMA="tpch_$CATALOG"
