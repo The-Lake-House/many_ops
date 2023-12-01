@@ -27,11 +27,9 @@ for CATALOG in hive iceberg delta; do
 
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE IF EXISTS lineitem;'
 
-    if [[ "$CATALOG" == "hive" ]]; then
-        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute "CREATE TABLE lineitem WITH (format = 'parquet') AS SELECT * FROM tpch.tiny.lineitem WITH NO DATA;"
-    else
-        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'CREATE TABLE lineitem AS SELECT * FROM tpch.tiny.lineitem WITH NO DATA;'
-    fi
+    # Relies on hive.storage-format, iceberg.file-format, and
+    # *.compression-codec being set
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'CREATE TABLE lineitem AS SELECT * FROM tpch.tiny.lineitem WITH NO DATA;'
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/$CATALOG/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
