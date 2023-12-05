@@ -76,7 +76,7 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
     ggplot(trace, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Number of requests", title = "MinIO: Number of S3 requests", subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_trace.pdf"), title = analysis)
 
-    ggplot(runtime, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Runtime [s]", title = "Query Runtime: SELECT * FROM data;", subtitle = analysis)
+    ggplot(runtime, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Runtime [ms]", title = "Query Runtime: SELECT * FROM data;", subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_runtime.pdf"), title = analysis)
 
     ggplot(hms, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Size in bytes", title = "HMS: Size of Postgres dump", subtitle = analysis)
