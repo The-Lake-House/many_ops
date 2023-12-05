@@ -60,9 +60,8 @@ for CATALOG in hive iceberg delta; do
         # Collect runtime
         $TRINO_HOME/bin/trino --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime/$REP"
 
-        # Collect MinIO bucket size and bucket listings
-        mcli du "minio/$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"
-        mcli ls -r "minio/$BUCKET_NAME" > "$OUTPUT_DIR/minio_ls/$REP"
+        # Collect MinIO bucket size and number of objects
+        s3cmd du "s3://$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"
 
         # Collect HMS SQL dump and size
         sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
