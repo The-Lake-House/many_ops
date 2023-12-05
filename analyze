@@ -3,8 +3,12 @@
 library(data.table)
 library(ggplot2)
 
-inputBaseDir <- "/home/agrueneberg/plots50"
-outputBaseDir <- "/home/agrueneberg/plots50"
+argv <- commandArgs(trailingOnly = TRUE)
+if (length(argv) < 2) {
+    stop("Usage: ./analyze INPUT_BASE_DIR OUTPUT_BASE_DIR")
+}
+inputBaseDir <- argv[1]
+outputBaseDir <- argv[1]
 
 load <- function(path) {
     data <- scan(path, what = integer(), quiet = TRUE)

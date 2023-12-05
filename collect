@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-INPUT_BASE_DIR="$HOME/raw50"
-OUTPUT_BASE_DIR="$HOME/plots50"
+if [[ "$#" -lt 2 ]]; then
+    echo "Usage: ./collect INPUT_BASE_DIR OUTPUT_BASE_DIR"
+    exit 1
+fi
+INPUT_BASE_DIR="$1"
+OUTPUT_BASE_DIR="$2"
 
 for INPUT_DIR in "$INPUT_BASE_DIR"/*/*; do
 
