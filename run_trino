@@ -2,7 +2,7 @@
 
 set -e
 
-NUM_REPS=5000
+NUM_REPS=50
 
 SCHEMA_NAME=many_inserts
 BUCKET_NAME=many-inserts
