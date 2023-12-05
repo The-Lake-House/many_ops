@@ -10,10 +10,6 @@ BUCKET_NAME=many-inserts
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
-# Make a copy of the connector config
-mkdir -p "$OUTPUT_BASE_DIR/conf"
-cp $TRINO_HOME/etc/catalog/*.properties "$OUTPUT_BASE_DIR/conf/"
-
 for CATALOG in hive iceberg delta; do
 
     OUTPUT_DIR="$OUTPUT_BASE_DIR/$CATALOG"
@@ -78,3 +74,7 @@ for CATALOG in hive iceberg delta; do
     mcli rb --force "minio/$BUCKET_NAME"
 
 done
+
+# Make a copy of the connector config
+mkdir -p "$OUTPUT_BASE_DIR/conf"
+cp $TRINO_HOME/etc/catalog/*.properties "$OUTPUT_BASE_DIR/conf/"
