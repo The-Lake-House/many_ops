@@ -26,7 +26,6 @@ for CATALOG in iceberg delta; do
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
     # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'DROP TABLE IF EXISTS data;'
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT);'
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --file inserts.sql
 
@@ -67,8 +66,6 @@ for CATALOG in iceberg delta; do
 
     # Stop sar monitoring
     kill -SIGINT $SAR_PID
-
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'DROP TABLE data;'
 
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute 'DROP SCHEMA $SCHEMA_NAME CASCADE;'
 

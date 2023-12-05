@@ -52,7 +52,6 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
     spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
     spark-sql-hms-$FORMAT $SPARK_CONF -e "CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';"
 
-    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e 'DROP TABLE IF EXISTS data;'
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "CREATE TABLE data (key INT) USING $FORMAT $TBLPROPERTIES;"
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f inserts.sql
 
@@ -88,8 +87,6 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
 
     # Stop sar monitoring
     kill -SIGINT $SAR_PID
-
-    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e 'DROP TABLE data;'
 
     spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA $SCHEMA_NAME CASCADE;"
 
