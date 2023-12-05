@@ -10,6 +10,8 @@ BUCKET_NAME=many-updates
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
+mcli rb --force "minio/$BUCKET_NAME"
+
 for CATALOG in iceberg delta; do
 
     OUTPUT_DIR="$OUTPUT_BASE_DIR/$CATALOG"
@@ -20,7 +22,7 @@ for CATALOG in iceberg delta; do
 
     mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
 
-    mcli mb -p "minio/$BUCKET_NAME"
+    mcli mb "minio/$BUCKET_NAME"
 
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"

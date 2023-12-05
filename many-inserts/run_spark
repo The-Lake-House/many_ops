@@ -10,6 +10,8 @@ BUCKET_NAME=many-inserts
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
+mcli rb --force "minio/$BUCKET_NAME"
+
 SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
 export HUDI_CONF_DIR=$PWD
@@ -46,7 +48,7 @@ for VARIANT in hive hudi_cow_insert hudi_cow_bulk_insert iceberg delta; do
 
     mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
 
-    mcli mb -p "minio/$BUCKET_NAME"
+    mcli mb "minio/$BUCKET_NAME"
 
     spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
     spark-sql-hms-$FORMAT $SPARK_CONF -e "CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';"
