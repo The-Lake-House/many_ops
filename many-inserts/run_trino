@@ -10,8 +10,6 @@ BUCKET_NAME=many-inserts
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
-mcli rb --force "minio/$BUCKET_NAME"
-
 TRINO_SESSION='--session=hive.hive_storage_format=PARQUET --session=delta.compression_codec=GZIP --session=iceberg.compression_codec=GZIP'
 
 for CATALOG in hive iceberg delta; do
@@ -22,11 +20,12 @@ for CATALOG in hive iceberg delta; do
         exit 1
     fi
 
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
+    mcli rb --force "minio/$BUCKET_NAME"
+
     mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
 
     mcli mb "minio/$BUCKET_NAME"
-
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
     # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
@@ -71,7 +70,6 @@ for CATALOG in hive iceberg delta; do
     kill -SIGINT $SAR_PID
 
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA $SCHEMA_NAME CASCADE;'
-
     mcli rb --force "minio/$BUCKET_NAME"
 
 done

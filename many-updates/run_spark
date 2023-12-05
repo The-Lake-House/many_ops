@@ -10,8 +10,6 @@ BUCKET_NAME=many-updates
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
-mcli rb --force "minio/$BUCKET_NAME"
-
 SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
 export HUDI_CONF_DIR=$PWD
@@ -44,11 +42,12 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta; do
         exit 1
     fi
 
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
+    mcli rb --force "minio/$BUCKET_NAME"
+
     mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
 
     mcli mb "minio/$BUCKET_NAME"
-
-    spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
     spark-sql-hms-$FORMAT $SPARK_CONF -e "CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';"
 
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "CREATE TABLE data (key INT, value INT) USING $FORMAT $TBLPROPERTIES;"
@@ -88,7 +87,6 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta; do
     kill -SIGINT $SAR_PID
 
     spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA $SCHEMA_NAME CASCADE;"
-
     mcli rb --force "minio/$BUCKET_NAME"
 
 done
