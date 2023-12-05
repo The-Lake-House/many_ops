@@ -7,22 +7,22 @@ NUM_REPS=5000
 SCHEMA_NAME=many_inserts
 BUCKET_NAME=many-inserts
 
-OUTPUT_DIR=results
-
-mkdir -p "$OUTPUT_DIR"
+OUTPUT_BASE_DIR=results
+mkdir -p "$OUTPUT_BASE_DIR"
 
 # Make a copy of the connector config
-mkdir -p "$OUTPUT_DIR/conf"
-cp $TRINO_HOME/etc/catalog/*.properties "$OUTPUT_DIR/conf/"
+mkdir -p "$OUTPUT_BASE_DIR/conf"
+cp $TRINO_HOME/etc/catalog/*.properties "$OUTPUT_BASE_DIR/conf/"
 
 for CATALOG in hive iceberg delta; do
 
-    if [[ -d "$OUTPUT_DIR/$CATALOG" ]]; then
-        echo "$OUTPUT_DIR/$CATALOG already exists"
+    OUTPUT_DIR="$OUTPUT_BASE_DIR/$CATALOG"
+    if [[ -d "$OUTPUT_DIR" ]]; then
+        echo "$OUTPUT_DIR already exists"
         exit 1
     fi
 
-    mkdir -p "$OUTPUT_DIR/$CATALOG"/{sar,trace,runtime,minio_du,minio_ls,hms}
+    mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
 
     mcli mb -p "minio/$BUCKET_NAME"
 
@@ -35,7 +35,7 @@ for CATALOG in hive iceberg delta; do
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT, value INT);'
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/$CATALOG/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3
@@ -47,7 +47,7 @@ for CATALOG in hive iceberg delta; do
         QUERY_ID="${CATALOG}_${REP}_$(openssl rand -hex 4)"
 
         # Start background tracing
-        mcli admin trace minio > "$OUTPUT_DIR/$CATALOG/trace/$REP" &
+        mcli admin trace minio > "$OUTPUT_DIR/trace/$REP" &
         TRACE_PID=$!
 
         # Perform query
@@ -57,14 +57,14 @@ for CATALOG in hive iceberg delta; do
         kill -SIGINT $TRACE_PID
 
         # Collect runtime
-        $TRINO_HOME/bin/trino --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/$CATALOG/runtime/$REP"
+        $TRINO_HOME/bin/trino --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime/$REP"
 
         # Collect MinIO bucket size and bucket listings
-        mcli du "minio/$BUCKET_NAME" > "$OUTPUT_DIR/$CATALOG/minio_du/$REP"
-        mcli ls -r "minio/$BUCKET_NAME" > "$OUTPUT_DIR/$CATALOG/minio_ls/$REP"
+        mcli du "minio/$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"
+        mcli ls -r "minio/$BUCKET_NAME" > "$OUTPUT_DIR/minio_ls/$REP"
 
         # Collect HMS SQL dump and size
-        sudo -u postgres pg_dump hms > "$OUTPUT_DIR/$CATALOG/hms/$REP"
+        sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
 
         echo "$CATALOG: $REP / $NUM_REPS"
 
