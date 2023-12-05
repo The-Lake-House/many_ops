@@ -8,13 +8,15 @@ OUTPUT_DIR=results
 
 mkdir -p "$OUTPUT_DIR"
 
+mcli mb -p minio/many-inserts
+
 # Make a copy of the connector config
 mkdir -p "$OUTPUT_DIR/conf"
 cp $TRINO_HOME/etc/catalog/*.properties "$OUTPUT_DIR/conf/"
 
 for CATALOG in hive iceberg delta; do
 
-    SCHEMA="tpch_$CATALOG"
+    SCHEMA="many_inserts_$CATALOG"
 
     if [[ -d "$OUTPUT_DIR/$CATALOG" ]]; then
         echo "$OUTPUT_DIR/$CATALOG already exists"
@@ -23,13 +25,13 @@ for CATALOG in hive iceberg delta; do
 
     mkdir -p "$OUTPUT_DIR/$CATALOG"/{sar,trace,runtime,minio_du,minio_ls,hms}
 
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.tpch_$CATALOG WITH (location = 's3a://tpch/$CATALOG');"
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.many_inserts_$CATALOG WITH (location = 's3a://many-inserts/$CATALOG');"
 
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE IF EXISTS lineitem;'
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE IF EXISTS data;'
 
     # Relies on hive.storage-format, iceberg.file-format, and
     # *.compression-codec being set
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'CREATE TABLE lineitem AS SELECT * FROM tpch.tiny.lineitem WITH NO DATA;'
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'CREATE TABLE data (key INT, value INT);'
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/$CATALOG/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
@@ -39,7 +41,7 @@ for CATALOG in hive iceberg delta; do
 
     for REP in $(seq -w 1 "$NUM_REPS"); do
 
-        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'INSERT INTO lineitem SELECT * FROM tpch.tiny.lineitem LIMIT 1;' &> /dev/null
+        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute "INSERT INTO data (key, value) VALUES ($((10#$REP)), 0);" &> /dev/null
 
         QUERY_ID="${CATALOG}_${REP}_$(openssl rand -hex 4)"
 
@@ -48,7 +50,7 @@ for CATALOG in hive iceberg delta; do
         TRACE_PID=$!
 
         # Perform query
-        $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --execute 'SELECT l_linestatus FROM lineitem;' --output-format NULL
+        $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --execute 'SELECT * FROM data;' --output-format NULL
 
         # Stop background tracing
         kill -SIGINT $TRACE_PID
@@ -57,8 +59,8 @@ for CATALOG in hive iceberg delta; do
         $TRINO_HOME/bin/trino --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/$CATALOG/runtime/$REP"
 
         # Collect MinIO bucket size and bucket listings
-        mcli du "minio/tpch/$CATALOG" > "$OUTPUT_DIR/$CATALOG/minio_du/$REP"
-        mcli ls -r "minio/tpch/$CATALOG" > "$OUTPUT_DIR/$CATALOG/minio_ls/$REP"
+        mcli du "minio/many-inserts/$CATALOG" > "$OUTPUT_DIR/$CATALOG/minio_du/$REP"
+        mcli ls -r "minio/many-inserts/$CATALOG" > "$OUTPUT_DIR/$CATALOG/minio_ls/$REP"
 
         # Collect HMS SQL dump and size
         sudo -u postgres pg_dump hms > "$OUTPUT_DIR/$CATALOG/hms/$REP"
@@ -70,6 +72,6 @@ for CATALOG in hive iceberg delta; do
     # Stop sar monitoring
     kill -SIGINT $SAR_PID
 
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE lineitem;'
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE data;'
 
 done
