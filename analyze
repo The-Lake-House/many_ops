@@ -1,0 +1,85 @@
+#!/usr/bin/env Rscript
+
+library(data.table)
+library(ggplot2)
+
+inputBaseDir <- "/home/agrueneberg/plots50"
+outputBaseDir <- "/home/agrueneberg/plots50"
+
+load <- function(path) {
+    data <- scan(path, what = integer(), quiet = TRUE)
+    data.frame(
+        variant = variant,
+        rep = 1:length(data),
+        value = data
+    )
+}
+
+for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
+
+    du <- data.frame(variant = character(), rep = integer(), value = integer())
+    ls <- data.frame(variant = character(), rep = integer(), value = integer())
+    trace <- data.frame(variant = character(), rep = integer(), value = integer())
+    runtime <- data.frame(variant = character(), rep = integer(), value = integer())
+    hms <- data.frame(variant = character(), rep = integer(), value = integer())
+
+    for (variant in list.files(paste0(inputBaseDir, "/", analysis))) {
+
+        inputDir <- paste0(inputBaseDir, "/", analysis, "/", variant)
+        outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
+
+        du <- rbind(du, load(paste0(inputDir, "/du")))
+        ls <- rbind(ls, load(paste0(inputDir, "/ls")))
+        trace <- rbind(trace, load(paste0(inputDir, "/trace")))
+        runtime <- rbind(runtime, load(paste0(inputDir, "/runtime")))
+        hms <- rbind(hms, load(paste0(inputDir, "/hms")))
+
+        cpu <- fread(paste0(inputDir, "/sar_cpu"))
+        cpu[["datetime"]] <- as.POSIXct(cpu[["timestamp"]], tz = "UTC")
+
+        ggplot(cpu, aes(datetime, `%user`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %user")
+        ggsave(paste0(outputDir, "/cpu_user.pdf"))
+
+        ggplot(cpu, aes(datetime, `%system`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %system")
+        ggsave(paste0(outputDir, "/cpu_system.pdf"))
+
+        ggplot(cpu, aes(datetime, `%idle`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %idle")
+        ggsave(paste0(outputDir, "/cpu_idle.pdf"))
+
+        mem <- fread(paste0(inputDir, "/sar_ram"))
+        mem[["datetime"]] <- as.POSIXct(mem[["timestamp"]], tz = "UTC")
+
+        ggplot(mem, aes(datetime, `%memused`)) + geom_point() + labs(x = "Time in UTC", title = "RAM: %memused")
+        ggsave(paste0(outputDir, "/mem_memused.pdf"))
+
+        disk <- fread(paste0(inputDir, "/sar_disk"))
+        disk[["datetime"]] <- as.POSIXct(disk[["timestamp"]], tz = "UTC")
+
+        ggplot(disk, aes(datetime, `await`)) + geom_point() + labs(x = "Time in UTC", title = "Disk: await")
+        ggsave(paste0(outputDir, "/disk_await.pdf"))
+
+        fs <- fread(paste0(inputDir, "/sar_fs"))
+        fs[["datetime"]] <- as.POSIXct(fs[["timestamp"]], tz = "UTC")
+
+        ggplot(fs, aes(datetime, `%fsused`)) + geom_point() + labs(x = "Time in UTC", title = "Filesystem: %fsused")
+        ggsave(paste0(outputDir, "/disk_fsused.pdf"))
+
+    }
+
+    du[["value"]] <- du[["value"]] / 1024
+    ggplot(du, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, "_du.pdf"), title = analysis)
+
+    ggplot(ls, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Number of files", title = "MinIO: Number of objects in bucket", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, "_ls.pdf"), title = analysis)
+
+    ggplot(trace, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Number of requests", title = "MinIO: Number of S3 requests", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, "_trace.pdf"), title = analysis)
+
+    ggplot(runtime, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Runtime [s]", title = "Query Runtime: SELECT * FROM data;", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, "_runtime.pdf"), title = analysis)
+
+    ggplot(hms, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Size in bytes", title = "HMS: Size of Postgres dump", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, "_hms.pdf"), title = analysis)
+
+}
