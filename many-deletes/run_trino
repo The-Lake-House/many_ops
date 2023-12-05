@@ -12,6 +12,8 @@ mkdir -p "$OUTPUT_BASE_DIR"
 
 mcli rb --force "minio/$BUCKET_NAME"
 
+TRINO_SESSION='--session=hive.hive_storage_format=PARQUET --session=delta.compression_codec=GZIP --session=iceberg.compression_codec=GZIP'
+
 for CATALOG in iceberg delta; do
 
     OUTPUT_DIR="$OUTPUT_BASE_DIR/$CATALOG"
@@ -24,12 +26,12 @@ for CATALOG in iceberg delta; do
 
     mcli mb "minio/$BUCKET_NAME"
 
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
     # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT);'
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --file inserts.sql
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT);'
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --file inserts.sql
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
@@ -39,7 +41,7 @@ for CATALOG in iceberg delta; do
 
     for REP in $(seq -w 1 "$NUM_REPS"); do
 
-        $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "DELETE FROM data WHERE key = $((10#$REP));" &> /dev/null
+        $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "DELETE FROM data WHERE key = $((10#$REP));" &> /dev/null
 
         QUERY_ID="${CATALOG}_${REP}_$(openssl rand -hex 4)"
 
@@ -48,13 +50,13 @@ for CATALOG in iceberg delta; do
         TRACE_PID=$!
 
         # Perform query
-        $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format NULL
+        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format NULL
 
         # Stop background tracing
         kill -SIGINT $TRACE_PID
 
         # Collect runtime
-        $TRINO_HOME/bin/trino --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime/$REP"
+        $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime/$REP"
 
         # Collect MinIO bucket size and number of objects
         s3cmd du "s3://$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"
@@ -69,7 +71,7 @@ for CATALOG in iceberg delta; do
     # Stop sar monitoring
     kill -SIGINT $SAR_PID
 
-    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute 'DROP SCHEMA $SCHEMA_NAME CASCADE;'
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA $SCHEMA_NAME CASCADE;'
 
     mcli rb --force "minio/$BUCKET_NAME"
 
