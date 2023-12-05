@@ -48,11 +48,7 @@ for CATALOG in hive iceberg delta; do
         TRACE_PID=$!
 
         # Perform query
-        if [[ "$CATALOG" == "iceberg" ]]; then
-            $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --session iceberg.experimental_split_size=107980672B --execute 'SELECT l_linestatus FROM lineitem;' --output-format NULL
-        else
-            $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --execute 'SELECT l_linestatus FROM lineitem;' --output-format NULL
-        fi
+        $TRINO_HOME/bin/trino --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA" --execute 'SELECT l_linestatus FROM lineitem;' --output-format NULL
 
         # Stop background tracing
         kill -SIGINT $TRACE_PID
