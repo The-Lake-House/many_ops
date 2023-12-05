@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+set -e
+
+NUM_REPS=50
+
+SCHEMA_NAME=many_inserts
+BUCKET_NAME=many-inserts
+
+OUTPUT_BASE_DIR=results
+mkdir -p "$OUTPUT_BASE_DIR"
+
+SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
+
+export HUDI_CONF_DIR=$PWD
+
+for VARIANT in hive hudi_cow_insert hudi_cow_bulk_insert iceberg delta; do
+
+    if [[ "$VARIANT" == 'hive' ]]; then
+        FORMAT=hive
+        OPTIONS="OPTIONS (fileFormat = 'parquet')"
+        TBLPROPERTIES=''
+    elif [[ "$VARIANT" == 'hudi_cow_insert' ]]; then
+        FORMAT=hudi
+        OPTIONS=''
+        TBLPROPERTIES="TBLPROPERTIES (type = 'cow', hoodie.spark.sql.insert.into.operation = 'insert')"
+    elif [[ "$VARIANT" == 'hudi_cow_bulk_insert' ]]; then
+        FORMAT=hudi
+        OPTIONS=''
+        TBLPROPERTIES="TBLPROPERTIES (type = 'cow', hoodie.spark.sql.insert.into.operation = 'bulk_insert')"
+    elif [[ "$VARIANT" == 'delta' ]]; then
+        FORMAT=delta
+        OPTIONS=''
+        TBLPROPERTIES="TBLPROPERTIES (delta.checkpointInterval = 2000000000)"
+    else
+        FORMAT="$VARIANT"
+        OPTIONS=''
+        TBLPROPERTIES=''
+    fi
+
+    OUTPUT_DIR="$OUTPUT_BASE_DIR/$VARIANT"
+    if [[ -d "$OUTPUT_DIR" ]]; then
+        echo "$OUTPUT_DIR already exists"
+        exit 1
+    fi
+
+    mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
+
+    mcli mb -p "minio/$BUCKET_NAME"
+
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';"
+
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e 'DROP TABLE IF EXISTS data;'
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "CREATE TABLE data (key INT, value INT) USING $FORMAT $OPTIONS $TBLPROPERTIES;"
+
+    # Start sar monitoring
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
+    SAR_PID=$!
+
+    sleep 3
+
+    for REP in $(seq -w 1 "$NUM_REPS"); do
+
+        spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "INSERT INTO data (key, value) VALUES ($((10#$REP)), 0);" &> /dev/null
+
+        # Start background tracing
+        mcli admin trace minio > "$OUTPUT_DIR/trace/$REP" &
+        TRACE_PID=$!
+
+        # Perform query
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime" --database "$SCHEMA_NAME" -e 'SELECT * FROM data;' &> /dev/null
+
+        # Stop background tracing
+        kill -SIGINT $TRACE_PID
+
+        # Collect MinIO bucket size and number of objects
+        s3cmd du "s3://$BUCKET_NAME/" > "$OUTPUT_DIR/minio_du/$REP"
+
+        # Collect HMS SQL dump and size
+        sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
+
+        echo "$VARIANT: $REP / $NUM_REPS"
+
+    done
+
+    # Stop sar monitoring
+    kill -SIGINT $SAR_PID
+
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e 'DROP TABLE data;'
+
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA $SCHEMA_NAME CASCADE;"
+
+    mcli rb --force "minio/$BUCKET_NAME"
+
+done
+
+unset HUDI_CONF_DIR
