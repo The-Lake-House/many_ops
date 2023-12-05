@@ -26,6 +26,7 @@ for CATALOG in hive iceberg delta; do
 
     mcli mb -p "minio/$BUCKET_NAME"
 
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'DROP TABLE IF EXISTS data;'
@@ -74,6 +75,8 @@ for CATALOG in hive iceberg delta; do
     kill -SIGINT $SAR_PID
 
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'DROP TABLE data;'
+
+    $TRINO_HOME/bin/trino --catalog "$CATALOG" --execute 'DROP SCHEMA $SCHEMA_NAME CASCADE;'
 
     mcli rb --force "minio/$BUCKET_NAME"
 
