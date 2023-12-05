@@ -75,3 +75,5 @@ for CATALOG in hive iceberg delta; do
     $TRINO_HOME/bin/trino --catalog "$CATALOG" --schema "$SCHEMA" --execute 'DROP TABLE data;'
 
 done
+
+mcli rb --force minio/many-inserts
