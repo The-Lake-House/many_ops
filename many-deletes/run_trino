@@ -23,7 +23,7 @@ for CATALOG in iceberg delta; do
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
     mcli rb --force "minio/$BUCKET_NAME"
 
-    mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
+    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms}
 
     mcli mb "minio/$BUCKET_NAME"
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
@@ -40,22 +40,21 @@ for CATALOG in iceberg delta; do
 
     for REP in $(seq -w 1 "$NUM_REPS"); do
 
-        $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "DELETE FROM data WHERE key = $((10#$REP));" &> /dev/null
-
-        QUERY_ID="${CATALOG}_${REP}_$(openssl rand -hex 4)"
-
-        # Start background tracing
-        mcli admin trace minio > "$OUTPUT_DIR/trace/$REP" &
+        QUERY_ID="${CATALOG}_${REP}_op_$(openssl rand -hex 4)"
+        mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-
-        # Perform query
-        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format NULL
-
-        # Stop background tracing
+        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "DELETE FROM data WHERE key = $((10#$REP));" &> /dev/null
         kill -SIGINT $TRACE_PID
+        $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime_op/$REP"
 
-        # Collect runtime
-        $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime/$REP"
+        sleep 1
+
+        QUERY_ID="${CATALOG}_${REP}_select_$(openssl rand -hex 4)"
+        mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
+        TRACE_PID=$!
+        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format NULL
+        kill -SIGINT $TRACE_PID
+        $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime_select/$REP"
 
         # Collect MinIO bucket size and number of objects
         s3cmd du "s3://$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"

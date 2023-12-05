@@ -23,11 +23,17 @@ for INPUT_DIR in "$INPUT_BASE_DIR"/*/*; do
     # hms
     du "$INPUT_DIR"/hms/* | cut -f 1 > "$OUTPUT_DIR"/hms
 
-    # trace
-    wc -l --total=never "$INPUT_DIR"/trace/* | awk '{print $1}' > "$OUTPUT_DIR"/trace
+    # trace_op
+    wc -l --total=never "$INPUT_DIR"/trace_op/* | awk '{print $1}' > "$OUTPUT_DIR"/trace_op
 
-    # runtime
-    paste <(grep -h SparkListenerSQLExecutionStart "$INPUT_DIR"/runtime/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') <(grep -h SparkListenerSQLExecutionEnd "$INPUT_DIR"/runtime/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime
+    # trace_select
+    wc -l --total=never "$INPUT_DIR"/trace_select/* | awk '{print $1}' > "$OUTPUT_DIR"/trace_select
+
+    # runtime_op
+    paste <(grep -h SparkListenerSQLExecutionStart "$INPUT_DIR"/runtime_op/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') <(grep -h SparkListenerSQLExecutionEnd "$INPUT_DIR"/runtime_op/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_op
+
+    # runtime_select
+    paste <(grep -h SparkListenerSQLExecutionStart "$INPUT_DIR"/runtime_select/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') <(grep -h SparkListenerSQLExecutionEnd "$INPUT_DIR"/runtime_select/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_select
 
     # sar
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -u > "$OUTPUT_DIR"/sar_cpu

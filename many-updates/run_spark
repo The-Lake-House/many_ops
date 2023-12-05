@@ -45,7 +45,7 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta; do
     spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
     mcli rb --force "minio/$BUCKET_NAME"
 
-    mkdir -p "$OUTPUT_DIR"/{sar,trace,runtime,minio_du,minio_ls,hms}
+    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms}
 
     mcli mb "minio/$BUCKET_NAME"
     spark-sql-hms-$FORMAT $SPARK_CONF -e "CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';"
@@ -61,16 +61,14 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta; do
 
     for REP in $(seq -w 1 "$NUM_REPS"); do
 
-        spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "UPDATE data SET value = $((10#$REP));" &> /dev/null
-
-        # Start background tracing
-        mcli admin trace minio > "$OUTPUT_DIR/trace/$REP" &
+        mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "UPDATE data SET value = $((10#$REP));" &> /dev/null
+        kill -SIGINT $TRACE_PID
 
-        # Perform query
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime" --database "$SCHEMA_NAME" -e 'SELECT * FROM data;' &> /dev/null
-
-        # Stop background tracing
+        mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
+        TRACE_PID=$!
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM data;' &> /dev/null
         kill -SIGINT $TRACE_PID
 
         # Collect MinIO bucket size and number of objects
