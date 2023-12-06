@@ -43,6 +43,7 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta; do
     fi
 
     spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
+    mcli mb -p "minio/$BUCKET_NAME"
     mcli rb --force "minio/$BUCKET_NAME"
 
     mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms}

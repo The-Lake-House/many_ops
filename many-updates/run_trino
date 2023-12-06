@@ -21,6 +21,7 @@ for CATALOG in iceberg delta; do
     fi
 
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
+    mcli mb "minio/$BUCKET_NAME"
     mcli rb --force "minio/$BUCKET_NAME"
 
     mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms}
