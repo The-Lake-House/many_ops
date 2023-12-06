@@ -24,7 +24,7 @@ for CATALOG in iceberg delta; do
     mcli mb "minio/$BUCKET_NAME"
     mcli rb --force "minio/$BUCKET_NAME"
 
-    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms}
+    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms,res}
 
     mcli mb "minio/$BUCKET_NAME"
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
@@ -53,7 +53,7 @@ for CATALOG in iceberg delta; do
         QUERY_ID="${CATALOG}_${REP}_select_$(openssl rand -hex 4)"
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
         TRACE_PID=$!
-        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format NULL
+        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/res/$REP"
         kill -SIGINT $TRACE_PID
         $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime_select/$REP"
 
