@@ -46,37 +46,37 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         cpu[["datetime"]] <- as.POSIXct(cpu[["timestamp"]], tz = "UTC")
 
         ggplot(cpu, aes(datetime, `%user`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %user", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
+        ggsave(paste0(outputDir, "/sar_cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
 
         ggplot(cpu, aes(datetime, `%system`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %system", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/cpu_system.pdf"), title = paste0(analysis, "/", variant, "/cpu/%system"))
+        ggsave(paste0(outputDir, "/sar_cpu_system.pdf"), title = paste0(analysis, "/", variant, "/cpu/%system"))
 
         ggplot(cpu, aes(datetime, `%idle`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %idle", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/cpu_idle.pdf"), title = paste0(analysis, "/", variant, "/cpu/%idle"))
+        ggsave(paste0(outputDir, "/sar_cpu_idle.pdf"), title = paste0(analysis, "/", variant, "/cpu/%idle"))
 
         mem <- fread(paste0(inputDir, "/sar_mem"))
         mem[["datetime"]] <- as.POSIXct(mem[["timestamp"]], tz = "UTC")
 
         ggplot(mem, aes(datetime, `%memused`)) + geom_point() + labs(x = "Time in UTC", title = "RAM: %memused", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/mem_memused.pdf"), title = paste0(analysis, "/", variant, "/mem/%memused"))
+        ggsave(paste0(outputDir, "/sar_mem_memused.pdf"), title = paste0(analysis, "/", variant, "/mem/%memused"))
 
         io <- fread(paste0(inputDir, "/sar_io"))
         io[["datetime"]] <- as.POSIXct(io[["timestamp"]], tz = "UTC")
 
         ggplot(io, aes(datetime, `tps`)) + geom_point() + labs(x = "Time in UTC", title = "I/O: tps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/io_tps.pdf"), title = paste0(analysis, "/", variant, "/io/tps"))
+        ggsave(paste0(outputDir, "/sar_io_tps.pdf"), title = paste0(analysis, "/", variant, "/io/tps"))
 
         ggplot(io, aes(datetime, `rtps`)) + geom_point() + labs(x = "Time in UTC", title = "I/O: rtps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/io_rtps.pdf"), title = paste0(analysis, "/", variant, "/io/rtps"))
+        ggsave(paste0(outputDir, "/sar_io_rtps.pdf"), title = paste0(analysis, "/", variant, "/io/rtps"))
 
         ggplot(io, aes(datetime, `wtps`)) + geom_point() + labs(x = "Time in UTC", title = "I/O: wtps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/io_wtps.pdf"), title = paste0(analysis, "/", variant, "/io/wtps"))
+        ggsave(paste0(outputDir, "/sar_io_wtps.pdf"), title = paste0(analysis, "/", variant, "/io/wtps"))
 
         disk <- fread(paste0(inputDir, "/sar_disk"))
         disk[["datetime"]] <- as.POSIXct(disk[["timestamp"]], tz = "UTC")
 
         ggplot(disk, aes(datetime, `await`)) + geom_point() + labs(x = "Time in UTC", title = "Disk: await", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
+        ggsave(paste0(outputDir, "/sar_disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
 
     }
 
