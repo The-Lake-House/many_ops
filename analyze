@@ -81,10 +81,10 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
     }
 
     du[["value"]] <- du[["value"]] / 1024
-    ggplot(du, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket", subtitle = analysis)
+    ggplot(du, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket", subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_du.pdf"), title = paste0(analysis, "/du"))
 
-    ggplot(ls, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Number of files", title = "MinIO: Number of objects in bucket", subtitle = analysis)
+    ggplot(ls, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Number of files", title = "MinIO: Number of objects in bucket", subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_ls.pdf"), title = paste0(analysis, "/ls"))
 
     trace_op_title <- "MinIO: Number of S3 requests during"
@@ -97,10 +97,10 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         trace_op_title <- paste(trace_op_title, "update")
     }
 
-    ggplot(trace_op, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Number of requests", title = trace_op_title, subtitle = analysis)
+    ggplot(trace_op, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Number of requests", title = trace_op_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_trace_op.pdf"), title = paste0(analysis, "/trace_op"))
 
-    ggplot(trace_select, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Number of requests", title = trace_select_title, subtitle = analysis)
+    ggplot(trace_select, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Number of requests", title = trace_select_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_trace_select.pdf"), title = paste0(analysis, "/trace_select"))
 
     runtime_op_title <- "Query runtime of"
@@ -113,13 +113,13 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         runtime_op_title <- paste(runtime_op_title, "update")
     }
 
-    ggplot(runtime_op, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Runtime [ms]", title = runtime_op_title, subtitle = analysis)
+    ggplot(runtime_op, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Runtime [ms]", title = runtime_op_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_runtime_op.pdf"), title = paste0(analysis, "/runtime_op"))
 
-    ggplot(runtime_select, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Runtime [ms]", title = runtime_select_title, subtitle = analysis)
+    ggplot(runtime_select, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Runtime [ms]", title = runtime_select_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_runtime_select.pdf"), title = paste0(analysis, "/runtime_select"))
 
-    ggplot(hms, aes(rep, value, color = variant)) + geom_line() + labs(x = "Rep", y = "Size in bytes", title = "HMS: Size of Postgres dump", subtitle = analysis)
+    ggplot(hms, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + labs(x = "Rep", y = "Size in bytes", title = "HMS: Size of Postgres dump", subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_hms.pdf"), title = paste0(analysis, "/hms"))
 
 }
