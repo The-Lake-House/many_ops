@@ -55,7 +55,7 @@ for VARIANT in hive hudi_cow_insert hudi_cow_bulk_insert iceberg delta; do
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "CREATE TABLE data (key INT, value INT) USING $FORMAT $OPTIONS $TBLPROPERTIES;"
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3

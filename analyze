@@ -60,13 +60,23 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         ggplot(mem, aes(datetime, `%memused`)) + geom_point() + labs(x = "Time in UTC", title = "RAM: %memused")
         ggsave(paste0(outputDir, "/mem_memused.pdf"))
 
+        io <- fread(paste0(inputDir, "/sar_io"))
+        io[["datetime"]] <- as.POSIXct(io[["timestamp"]], tz = "UTC")
+
+        ggplot(io, aes(datetime, `tps`)) + geom_point() + labs(x = "Time in UTC", title = "I/O: tps")
+        ggsave(paste0(outputDir, "/io_tps.pdf"))
+
+        ggplot(io, aes(datetime, `rtps`)) + geom_point() + labs(x = "Time in UTC", title = "I/O: rtps")
+        ggsave(paste0(outputDir, "/io_rtps.pdf"))
+
+        ggplot(io, aes(datetime, `wtps`)) + geom_point() + labs(x = "Time in UTC", title = "I/O: wtps")
+        ggsave(paste0(outputDir, "/io_wtps.pdf"))
+
         disk <- fread(paste0(inputDir, "/sar_disk"))
         disk[["datetime"]] <- as.POSIXct(disk[["timestamp"]], tz = "UTC")
 
         ggplot(disk, aes(datetime, `await`)) + geom_point() + labs(x = "Time in UTC", title = "Disk: await")
         ggsave(paste0(outputDir, "/disk_await.pdf"))
-
-
 
     }
 

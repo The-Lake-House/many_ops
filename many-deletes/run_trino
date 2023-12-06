@@ -33,7 +33,7 @@ for CATALOG in iceberg delta; do
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --file inserts.sql
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3
