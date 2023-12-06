@@ -55,7 +55,7 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
     spark-sql-hms-$FORMAT $SPARK_CONF -e "CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';"
 
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "CREATE TABLE data (key INT) USING $FORMAT $TBLPROPERTIES;"
-    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f inserts.sql
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -e "$(./datagen data $NUM_REPS)"
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
