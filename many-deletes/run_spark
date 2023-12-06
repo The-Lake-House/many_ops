@@ -57,7 +57,7 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f inserts.sql
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 -F --fs=/dev/mapper/cryptroot 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -d --dev=nvme0n1 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3

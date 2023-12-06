@@ -66,11 +66,7 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         ggplot(disk, aes(datetime, `await`)) + geom_point() + labs(x = "Time in UTC", title = "Disk: await")
         ggsave(paste0(outputDir, "/disk_await.pdf"))
 
-        fs <- fread(paste0(inputDir, "/sar_fs"))
-        fs[["datetime"]] <- as.POSIXct(fs[["timestamp"]], tz = "UTC")
 
-        ggplot(fs, aes(datetime, `%fsused`)) + geom_point() + labs(x = "Time in UTC", title = "Filesystem: %fsused")
-        ggsave(paste0(outputDir, "/disk_fsused.pdf"))
 
     }
 
