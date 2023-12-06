@@ -37,7 +37,7 @@ for INPUT_DIR in "$INPUT_BASE_DIR"/*/*; do
 
     # sar
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -u > "$OUTPUT_DIR"/sar_cpu
-    sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -r > "$OUTPUT_DIR"/sar_ram
+    sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -r > "$OUTPUT_DIR"/sar_mem
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -F --fs=/dev/mapper/crypthome > "$OUTPUT_DIR"/sar_fs
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -d --dev=nvme0n1p6 > "$OUTPUT_DIR"/sar_disk
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -F --fs=/dev/mapper/crypthome > "$OUTPUT_DIR"/sar_fs

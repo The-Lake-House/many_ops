@@ -54,7 +54,7 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         ggplot(cpu, aes(datetime, `%idle`)) + geom_point() + labs(x = "Time in UTC", title = "CPU: %idle")
         ggsave(paste0(outputDir, "/cpu_idle.pdf"))
 
-        mem <- fread(paste0(inputDir, "/sar_ram"))
+        mem <- fread(paste0(inputDir, "/sar_mem"))
         mem[["datetime"]] <- as.POSIXct(mem[["timestamp"]], tz = "UTC")
 
         ggplot(mem, aes(datetime, `%memused`)) + geom_point() + labs(x = "Time in UTC", title = "RAM: %memused")
