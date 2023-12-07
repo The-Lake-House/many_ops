@@ -10,11 +10,11 @@ BUCKET_NAME=many-deletes
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
-SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
-
 export HUDI_CONF_DIR=$PWD
 
 for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vectors delta_deletion_vectors; do
+
+    SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
     if [[ "$VARIANT" == 'hudi_cow' ]]; then
         FORMAT=hudi
@@ -25,9 +25,11 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
     elif [[ "$VARIANT" == 'iceberg_cow' ]]; then
         FORMAT=iceberg
         TBLPROPERTIES="TBLPROPERTIES (write.delete.mode = 'copy-on-write', write.update.mode = 'copy-on-write', write.merge.mode = 'copy-on-write')"
+        SPARK_CONF="$SPARK_CONF --conf spark.sql.catalog.spark_catalog.cache-enabled=false"
     elif [[ "$VARIANT" == 'iceberg_mor' ]]; then
         FORMAT=iceberg
         TBLPROPERTIES="TBLPROPERTIES (write.delete.mode = 'merge-on-read', write.update.mode = 'merge-on-read', write.merge.mode = 'merge-on-read')"
+        SPARK_CONF="$SPARK_CONF --conf spark.sql.catalog.spark_catalog.cache-enabled=false"
     elif [[ "$VARIANT" == 'delta_no_deletion_vectors' ]]; then
         FORMAT=delta
         TBLPROPERTIES="TBLPROPERTIES (delta.enableDeletionVectors = false, delta.checkpointInterval = 2000000000)"
