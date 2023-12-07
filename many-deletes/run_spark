@@ -82,7 +82,7 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
         # Collect MinIO bucket size and number of objects
         s3cmd du "s3://$BUCKET_NAME/" > "$OUTPUT_DIR/minio_du/$REP"
 
-        # Collect HMS SQL dump and size
+        # Collect HMS SQL dump
         sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
 
         echo "$VARIANT: $REP / $NUM_REPS"

@@ -58,7 +58,7 @@ for CATALOG in iceberg delta; do
         # Collect MinIO bucket size and number of objects
         s3cmd du "s3://$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"
 
-        # Collect HMS SQL dump and size
+        # Collect HMS SQL dump
         sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
 
         echo "$CATALOG: $REP / $NUM_REPS"
