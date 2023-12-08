@@ -31,7 +31,7 @@ for CATALOG in iceberg delta; do
 
     # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT);'
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "$(./datagen data $NUM_REPS)"
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "$(./datagen data $(($NUM_REPS + 1)))"
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
