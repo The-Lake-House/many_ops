@@ -13,7 +13,6 @@ outputBaseDir <- argv[1]
 load <- function(path) {
     data <- scan(path, what = integer(), quiet = TRUE)
     data.frame(
-        variant = variant,
         rep = 1:length(data),
         value = data
     )
@@ -34,13 +33,13 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         inputDir <- paste0(inputBaseDir, "/", analysis, "/", variant)
         outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
 
-        du <- rbind(du, load(paste0(inputDir, "/du")))
-        ls <- rbind(ls, load(paste0(inputDir, "/ls")))
-        trace_op <- rbind(trace_op, load(paste0(inputDir, "/trace_op")))
-        trace_select <- rbind(trace_select, load(paste0(inputDir, "/trace_select")))
-        runtime_op <- rbind(runtime_op, load(paste0(inputDir, "/runtime_op")))
-        runtime_select <- rbind(runtime_select, load(paste0(inputDir, "/runtime_select")))
-        hms <- rbind(hms, load(paste0(inputDir, "/hms")))
+        du <- rbind(du, cbind(variant = variant, load(paste0(inputDir, "/du"))))
+        ls <- rbind(ls, cbind(variant = variant, load(paste0(inputDir, "/ls"))))
+        trace_op <- rbind(trace_op, cbind(variant = variant, load(paste0(inputDir, "/trace_op"))))
+        trace_select <- rbind(trace_select, cbind(variant = variant, load(paste0(inputDir, "/trace_select"))))
+        runtime_op <- rbind(runtime_op, cbind(variant = variant, load(paste0(inputDir, "/runtime_op"))))
+        runtime_select <- rbind(runtime_select, cbind(variant = variant, load(paste0(inputDir, "/runtime_select"))))
+        hms <- rbind(hms, cbind(variant = variant, load(paste0(inputDir, "/hms"))))
 
         cpu <- fread(paste0(inputDir, "/sar_cpu"))
         cpu[["datetime"]] <- as.POSIXct(cpu[["timestamp"]], tz = "UTC")
