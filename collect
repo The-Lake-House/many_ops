@@ -23,11 +23,15 @@ for INPUT_DIR in "$INPUT_BASE_DIR"/*/*; do
     # hms
     du "$INPUT_DIR"/hms/* | cut -f 1 > "$OUTPUT_DIR"/hms
 
-    # trace_op
-    wc -l --total=never "$INPUT_DIR"/trace_op/* | awk '{print $1}' > "$OUTPUT_DIR"/trace_op
+    # trace_op: Extract name of operation (s3.OP) and rep number from filename
+    for FILE in "$INPUT_DIR"/trace_op/*; do
+        sed -n -e "s/.*s3.\(\w\+\).*/$(basename $FILE) \1/p" "$FILE" >> "$OUTPUT_DIR"/trace_op
+    done
 
-    # trace_select
-    wc -l --total=never "$INPUT_DIR"/trace_select/* | awk '{print $1}' > "$OUTPUT_DIR"/trace_select
+    # trace_select: Extract name of operation (s3.OP) and rep number from filename
+    for FILE in "$INPUT_DIR"/trace_select/*; do
+        sed -n -e "s/.*s3.\(\w\+\).*/$(basename $FILE) \1/p" "$FILE" >> "$OUTPUT_DIR"/trace_select
+    done
 
     # runtime_op
     paste <(grep -h SparkListenerSQLExecutionStart "$INPUT_DIR"/runtime_op/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') <(grep -h SparkListenerSQLExecutionEnd "$INPUT_DIR"/runtime_op/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_op

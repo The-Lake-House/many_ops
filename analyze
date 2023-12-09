@@ -18,6 +18,14 @@ load <- function(path) {
     )
 }
 
+loadTrace <- function(path) {
+    fread(
+        path,
+        col.names = c("rep", "value"),
+        data.table = FALSE
+    )
+}
+
 for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
 
     du <- data.frame(variant = character(), rep = integer(), value = integer())
@@ -28,15 +36,42 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
     runtime_select <- data.frame(variant = character(), rep = integer(), value = integer())
     hms <- data.frame(variant = character(), rep = integer(), value = integer())
 
+    trace_op_title <- "MinIO: Number of S3 requests during"
+    trace_select_title <- paste(trace_op_title, "table scan")
+    if (analysis == "many_inserts") {
+        trace_op_title <- paste(trace_op_title, "insertion")
+    } else if (analysis == "many_deletes") {
+        trace_op_title <- paste(trace_op_title, "deletion")
+    } else if (analysis == "many_updates") {
+        trace_op_title <- paste(trace_op_title, "update")
+    }
+
+    runtime_op_title <- "Query runtime of"
+    runtime_select_title <- paste(runtime_op_title, "table scan")
+    if (analysis == "many_inserts") {
+        runtime_op_title <- paste(runtime_op_title, "insertion")
+    } else if (analysis == "many_deletes") {
+        runtime_op_title <- paste(runtime_op_title, "deletion")
+    } else if (analysis == "many_updates") {
+        runtime_op_title <- paste(runtime_op_title, "update")
+    }
+
     for (variant in list.files(paste0(inputBaseDir, "/", analysis))) {
 
         inputDir <- paste0(inputBaseDir, "/", analysis, "/", variant)
         outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
 
+        trace_op_per_variant <- loadTrace(paste0(inputDir, "/trace_op"))
+        trace_select_per_variant <- loadTrace(paste0(inputDir, "/trace_select"))
+
         du <- rbind(du, cbind(variant = variant, load(paste0(inputDir, "/du"))))
         ls <- rbind(ls, cbind(variant = variant, load(paste0(inputDir, "/ls"))))
-        trace_op <- rbind(trace_op, cbind(variant = variant, load(paste0(inputDir, "/trace_op"))))
-        trace_select <- rbind(trace_select, cbind(variant = variant, load(paste0(inputDir, "/trace_select"))))
+        trace_op_counts <- as.data.frame(table(rep = trace_op_per_variant$rep), responseName = "value", stringsAsFactors = FALSE)
+        trace_op_counts[["rep"]] <- as.integer(trace_op_counts[["rep"]])
+        trace_op <- rbind(trace_op, cbind(variant = variant, trace_op_counts))
+        trace_select_counts <- as.data.frame(table(rep = trace_select_per_variant$rep), responseName = "value", stringsAsFactors = FALSE)
+        trace_select_counts[["rep"]] <- as.integer(trace_select_counts[["rep"]])
+        trace_select <- rbind(trace_select, cbind(variant = variant, trace_select_counts))
         runtime_op <- rbind(runtime_op, cbind(variant = variant, load(paste0(inputDir, "/runtime_op"))))
         runtime_select <- rbind(runtime_select, cbind(variant = variant, load(paste0(inputDir, "/runtime_select"))))
         hms <- rbind(hms, cbind(variant = variant, load(paste0(inputDir, "/hms"))))
@@ -77,6 +112,12 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
         ggplot(disk, aes(datetime, `await`)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "Disk: await", subtitle = paste0(analysis, "/", variant))
         ggsave(paste0(outputDir, "/sar_disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
 
+        ggplot(trace_op_per_variant, aes(rep, fill = value)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = trace_op_title, subtitle = paste0(analysis, " / ", variant))
+        ggsave(paste0(outputDir, "/trace_op.pdf"), title = paste0(analysis, "/", variant, "/trace_op"))
+
+        ggplot(trace_select_per_variant, aes(rep, fill = value)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = trace_select_title, subtitle = paste0(analysis, " / ", variant))
+        ggsave(paste0(outputDir, "/trace_select.pdf"), title = paste0(analysis, "/", variant, "/trace_select"))
+
     }
 
     du[["value"]] <- du[["value"]] / 1024
@@ -86,31 +127,11 @@ for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
     ggplot(ls, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of files", title = "MinIO: Number of objects in bucket", subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_ls.pdf"), title = paste0(analysis, "/ls"))
 
-    trace_op_title <- "MinIO: Number of S3 requests during"
-    trace_select_title <- paste(trace_op_title, "table scan")
-    if (analysis == "many_inserts") {
-        trace_op_title <- paste(trace_op_title, "insertion")
-    } else if (analysis == "many_deletes") {
-        trace_op_title <- paste(trace_op_title, "deletion")
-    } else if (analysis == "many_updates") {
-        trace_op_title <- paste(trace_op_title, "update")
-    }
-
     ggplot(trace_op, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", title = trace_op_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_trace_op.pdf"), title = paste0(analysis, "/trace_op"))
 
     ggplot(trace_select, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", title = trace_select_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_trace_select.pdf"), title = paste0(analysis, "/trace_select"))
-
-    runtime_op_title <- "Query runtime of"
-    runtime_select_title <- paste(runtime_op_title, "table scan")
-    if (analysis == "many_inserts") {
-        runtime_op_title <- paste(runtime_op_title, "insertion")
-    } else if (analysis == "many_deletes") {
-        runtime_op_title <- paste(runtime_op_title, "deletion")
-    } else if (analysis == "many_updates") {
-        runtime_op_title <- paste(runtime_op_title, "update")
-    }
 
     ggplot(runtime_op, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", title = runtime_op_title, subtitle = analysis)
     ggsave(paste0(outputBaseDir, "/", analysis, "_runtime_op.pdf"), title = paste0(analysis, "/runtime_op"))
