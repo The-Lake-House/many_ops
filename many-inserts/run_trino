@@ -43,7 +43,7 @@ for CATALOG in hive iceberg delta; do
         QUERY_ID="${CATALOG}_${REP}_op_$(openssl rand -hex 4)"
         mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-        $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "INSERT INTO data (key, value) VALUES ($((10#$REP)), 0);" &> /dev/null
+        $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "INSERT INTO data VALUES ($((10#$REP)), 0);" &> /dev/null
         kill -SIGINT $TRACE_PID
         $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime_op/$REP"
 
