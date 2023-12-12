@@ -223,3 +223,24 @@ for (analysis in levels(metrics[["analysis"]])) {
     }
 
 }
+
+ggplot(metrics, aes(rep, du, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/du.pdf"), title = "du")
+
+ggplot(metrics, aes(rep, ls, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/ls.pdf"), title = "ls")
+
+ggplot(metrics, aes(rep, trace_op, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/trace_op.pdf"), title = "trace_op")
+
+ggplot(metrics, aes(rep, trace_select, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/trace_select.pdf"), title = "trace_select")
+
+ggplot(metrics, aes(rep, runtime_op, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/runtime_op.pdf"), title = "runtime_op")
+
+ggplot(metrics, aes(rep, runtime_select, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/runtime_select.pdf"), title = "runtime_select")
+
+ggplot(metrics, aes(rep, hms, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
+ggsave(paste0(outputBaseDir, "/hms.pdf"), title = "hms")
