@@ -8,7 +8,8 @@ if (length(argv) < 2) {
     stop("Usage: ./analyze INPUT_BASE_DIR OUTPUT_BASE_DIR")
 }
 inputBaseDir <- argv[1]
-outputBaseDir <- argv[1]
+outputBaseDir <- argv[2]
+dir.create(outputBaseDir, showWarnings = FALSE, recursive = TRUE)
 
 analyses <- c("many_inserts", "many_deletes", "many_updates", "many_inserts_partitioned")
 
@@ -60,7 +61,6 @@ for (analysis in analyses) {
     for (variant in list.files(paste0(inputBaseDir, "/", analysis))) {
 
         inputDir <- paste0(inputBaseDir, "/", analysis, "/", variant)
-        outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
 
         du = scan(paste0(inputDir, "/du"), what = integer(), quiet = TRUE)
         ls = scan(paste0(inputDir, "/ls"), what = integer(), quiet = TRUE)
@@ -182,6 +182,9 @@ for (analysis in levels(metrics[["analysis"]])) {
     ggsave(paste0(outputBaseDir, "/", analysis, " hms.pdf"), title = paste0(analysis, ": hms"))
 
     for (variant in unique(metricsSubset[["variant"]])) {
+
+        outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
+        dir.create(outputDir, showWarnings = FALSE, recursive = TRUE)
 
         sarSubset <- sar[sar[["analysis"]] == analysis & sar[["variant"]] == variant, ]
 
