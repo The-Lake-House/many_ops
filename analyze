@@ -10,13 +10,7 @@ if (length(argv) < 2) {
 inputBaseDir <- argv[1]
 outputBaseDir <- argv[1]
 
-load <- function(path) {
-    data <- scan(path, what = integer(), quiet = TRUE)
-    data.frame(
-        rep = 1:length(data),
-        value = data
-    )
-}
+analyses <- c("many_inserts", "many_deletes", "many_updates", "many_inserts_partitioned")
 
 loadTrace <- function(path) {
     fread(
@@ -26,120 +20,203 @@ loadTrace <- function(path) {
     )
 }
 
-for (analysis in c("many_inserts", "many_deletes", "many_updates")) {
+metrics <- data.frame(
+    analysis = character(),
+    variant = character(),
+    rep = integer(),
+    du = integer(),
+    ls = integer(),
+    trace_op = integer(),
+    trace_select = integer(),
+    runtime_op = integer(),
+    runtime_select = integer(),
+    hms = integer()
+)
 
-    du <- data.frame(variant = character(), rep = integer(), value = integer())
-    ls <- data.frame(variant = character(), rep = integer(), value = integer())
-    trace_op <- data.frame(variant = character(), rep = integer(), value = integer())
-    trace_select <- data.frame(variant = character(), rep = integer(), value = integer())
-    runtime_op <- data.frame(variant = character(), rep = integer(), value = integer())
-    runtime_select <- data.frame(variant = character(), rep = integer(), value = integer())
-    hms <- data.frame(variant = character(), rep = integer(), value = integer())
+trace <- data.frame(
+    analysis = character(),
+    variant = character(),
+    type = character(),
+    rep = integer(),
+    req = character()
+)
 
-    trace_op_title <- "MinIO: Number of S3 requests during"
-    trace_select_title <- paste(trace_op_title, "table scan")
-    if (analysis == "many_inserts") {
-        trace_op_title <- paste(trace_op_title, "insertion")
-    } else if (analysis == "many_deletes") {
-        trace_op_title <- paste(trace_op_title, "deletion")
-    } else if (analysis == "many_updates") {
-        trace_op_title <- paste(trace_op_title, "update")
-    }
+sar <- data.frame(
+    analysis = character(),
+    variant = character(),
+    timestamp = character(),
+    cpu_percent_user = double(),
+    cpu_percent_system = double(),
+    cpu_percent_idle = double(),
+    mem_percent_used = double(),
+    io_tps = double(),
+    io_rtps = double(),
+    io_wtps = double(),
+    disk_await = double()
+)
 
-    runtime_op_title <- "Query runtime of"
-    runtime_select_title <- paste(runtime_op_title, "table scan")
-    if (analysis == "many_inserts") {
-        runtime_op_title <- paste(runtime_op_title, "insertion")
-    } else if (analysis == "many_deletes") {
-        runtime_op_title <- paste(runtime_op_title, "deletion")
-    } else if (analysis == "many_updates") {
-        runtime_op_title <- paste(runtime_op_title, "update")
-    }
+for (analysis in analyses) {
 
     for (variant in list.files(paste0(inputBaseDir, "/", analysis))) {
 
         inputDir <- paste0(inputBaseDir, "/", analysis, "/", variant)
         outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
 
+        du = scan(paste0(inputDir, "/du"), what = integer(), quiet = TRUE)
+        ls = scan(paste0(inputDir, "/ls"), what = integer(), quiet = TRUE)
+        runtime_op = scan(paste0(inputDir, "/runtime_op"), what = integer(), quiet = TRUE)
+        runtime_select = scan(paste0(inputDir, "/runtime_select"), what = integer(), quiet = TRUE)
+        hms = scan(paste0(inputDir, "/hms"), what = integer(), quiet = TRUE)
+
         trace_op_per_variant <- loadTrace(paste0(inputDir, "/trace_op"))
         trace_select_per_variant <- loadTrace(paste0(inputDir, "/trace_select"))
 
-        du <- rbind(du, cbind(variant = variant, load(paste0(inputDir, "/du"))))
-        ls <- rbind(ls, cbind(variant = variant, load(paste0(inputDir, "/ls"))))
-        trace_op_counts <- as.data.frame(table(rep = trace_op_per_variant$rep), responseName = "value", stringsAsFactors = FALSE)
-        trace_op_counts[["rep"]] <- as.integer(trace_op_counts[["rep"]])
-        trace_op <- rbind(trace_op, cbind(variant = variant, trace_op_counts))
-        trace_select_counts <- as.data.frame(table(rep = trace_select_per_variant$rep), responseName = "value", stringsAsFactors = FALSE)
-        trace_select_counts[["rep"]] <- as.integer(trace_select_counts[["rep"]])
-        trace_select <- rbind(trace_select, cbind(variant = variant, trace_select_counts))
-        runtime_op <- rbind(runtime_op, cbind(variant = variant, load(paste0(inputDir, "/runtime_op"))))
-        runtime_select <- rbind(runtime_select, cbind(variant = variant, load(paste0(inputDir, "/runtime_select"))))
-        hms <- rbind(hms, cbind(variant = variant, load(paste0(inputDir, "/hms"))))
+        metrics <- rbind(
+            metrics,
+            data.frame(
+                analysis = analysis,
+                variant = variant,
+                rep = 1:length(du),
+                du = du,
+                ls = ls,
+                trace_op = as.vector(table(trace_op_per_variant$rep)),
+                trace_select = as.vector(table(trace_select_per_variant$rep)),
+                runtime_op = runtime_op,
+                runtime_select = runtime_select,
+                hms = hms
+            )
+        )
+
+        trace <- rbind(
+            trace,
+            data.frame(
+                analysis = analysis,
+                variant = variant,
+                type = "op",
+                rep = trace_op_per_variant[["rep"]],
+                req = trace_op_per_variant[["value"]]
+            )
+        )
+
+        trace <- rbind(
+            trace,
+            data.frame(
+                analysis = analysis,
+                variant = variant,
+                type = "select",
+                rep = trace_select_per_variant[["rep"]],
+                req = trace_select_per_variant[["value"]]
+            )
+        )
 
         cpu <- fread(paste0(inputDir, "/sar_cpu"))
-        cpu[["datetime"]] <- as.POSIXct(cpu[["timestamp"]], tz = "UTC")
-
-        ggplot(cpu, aes(datetime, `%user`)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %user", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
-
-        ggplot(cpu, aes(datetime, `%system`)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %system", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_cpu_system.pdf"), title = paste0(analysis, "/", variant, "/cpu/%system"))
-
-        ggplot(cpu, aes(datetime, `%idle`)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %idle", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_cpu_idle.pdf"), title = paste0(analysis, "/", variant, "/cpu/%idle"))
-
         mem <- fread(paste0(inputDir, "/sar_mem"))
-        mem[["datetime"]] <- as.POSIXct(mem[["timestamp"]], tz = "UTC")
-
-        ggplot(mem, aes(datetime, `%memused`)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "RAM: %memused", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_mem_memused.pdf"), title = paste0(analysis, "/", variant, "/mem/%memused"))
-
         io <- fread(paste0(inputDir, "/sar_io"))
-        io[["datetime"]] <- as.POSIXct(io[["timestamp"]], tz = "UTC")
-
-        ggplot(io, aes(datetime, `tps`)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: tps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_io_tps.pdf"), title = paste0(analysis, "/", variant, "/io/tps"))
-
-        ggplot(io, aes(datetime, `rtps`)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: rtps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_io_rtps.pdf"), title = paste0(analysis, "/", variant, "/io/rtps"))
-
-        ggplot(io, aes(datetime, `wtps`)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: wtps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_io_wtps.pdf"), title = paste0(analysis, "/", variant, "/io/wtps"))
-
         disk <- fread(paste0(inputDir, "/sar_disk"))
-        disk[["datetime"]] <- as.POSIXct(disk[["timestamp"]], tz = "UTC")
-
-        ggplot(disk, aes(datetime, `await`)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "Disk: await", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
-
-        ggplot(trace_op_per_variant, aes(rep, fill = value)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = trace_op_title, subtitle = paste0(analysis, " / ", variant))
-        ggsave(paste0(outputDir, "/trace_op.pdf"), title = paste0(analysis, "/", variant, "/trace_op"))
-
-        ggplot(trace_select_per_variant, aes(rep, fill = value)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = trace_select_title, subtitle = paste0(analysis, " / ", variant))
-        ggsave(paste0(outputDir, "/trace_select.pdf"), title = paste0(analysis, "/", variant, "/trace_select"))
+        sar <- rbind(
+            sar,
+            data.frame(
+                analysis = analysis,
+                variant = variant,
+                timestamp = cpu[["timestamp"]],
+                cpu_percent_user = cpu[["%user"]],
+                cpu_percent_system = cpu[["%system"]],
+                cpu_percent_idle = cpu[["%idle"]],
+                mem_percent_used = mem[["%memused"]],
+                io_tps = io[["tps"]],
+                io_rtps = io[["rtps"]],
+                io_wtps = io[["wtps"]],
+                disk_await = disk[["await"]]
+            )
+        )
 
     }
 
-    du[["value"]] <- du[["value"]] / 1024
-    ggplot(du, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket", subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_du.pdf"), title = paste0(analysis, "/du"))
+}
 
-    ggplot(ls, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of files", title = "MinIO: Number of objects in bucket", subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_ls.pdf"), title = paste0(analysis, "/ls"))
+metrics[["analysis"]] <- factor(
+    metrics[["analysis"]],
+    levels = analyses,
+    labels = c("Many Inserts", "Many Deletes", "Many Updates", "Many Inserts (Partitioned)")
+)
 
-    ggplot(trace_op, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", title = trace_op_title, subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_trace_op.pdf"), title = paste0(analysis, "/trace_op"))
+metrics[["du"]] <- metrics[["du"]] / 1024
 
-    ggplot(trace_select, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", title = trace_select_title, subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_trace_select.pdf"), title = paste0(analysis, "/trace_select"))
+sar[["analysis"]] <- factor(
+    sar[["analysis"]],
+    levels = analyses,
+    labels = c("Many Inserts", "Many Deletes", "Many Updates", "Many Inserts (Partitioned)")
+)
 
-    ggplot(runtime_op, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", title = runtime_op_title, subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_runtime_op.pdf"), title = paste0(analysis, "/runtime_op"))
+sar[["timestamp"]] <- as.POSIXct(sar[["timestamp"]], tz = "UTC")
 
-    ggplot(runtime_select, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", title = runtime_select_title, subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_runtime_select.pdf"), title = paste0(analysis, "/runtime_select"))
+trace[["analysis"]] <- factor(
+    trace[["analysis"]],
+    levels = analyses,
+    labels = c("Many Inserts", "Many Deletes", "Many Updates", "Many Inserts (Partitioned)")
+)
 
-    ggplot(hms, aes(rep, value, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in bytes", title = "HMS: Size of Postgres dump", subtitle = analysis)
-    ggsave(paste0(outputBaseDir, "/", analysis, "_hms.pdf"), title = paste0(analysis, "/hms"))
+for (analysis in levels(metrics[["analysis"]])) {
+
+    metricsSubset <- metrics[metrics[["analysis"]] == analysis, ]
+
+    ggplot(metricsSubset, aes(rep, du, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", title = "MinIO: Total size of bucket", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " du.pdf"), title = paste0(analysis, ": du"))
+
+    ggplot(metricsSubset, aes(rep, ls, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of files", title = "MinIO: Number of objects in bucket", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " ls.pdf"), title = paste0(analysis, ": ls"))
+
+    ggplot(metricsSubset, aes(rep, trace_op, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", title = "MinIO: Number of S3 requests during update operation", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op.pdf"), title = paste0(analysis, ": trace_op"))
+
+    ggplot(metricsSubset, aes(rep, trace_select, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", title = "MinIO: Number of S3 requests during table scan", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select.pdf"), title = paste0(analysis, ": trace_select"))
+
+    ggplot(metricsSubset, aes(rep, runtime_op, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", title = "Query runtime during update operation", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " runtime_op.pdf"), title = paste0(analysis, ": runtime_op"))
+
+    ggplot(metricsSubset, aes(rep, runtime_select, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", title = "Query runtime during table scan", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " runtime_select.pdf"), title = paste0(analysis, ": runtime_select"))
+
+    ggplot(metricsSubset, aes(rep, hms, color = variant)) + geom_line(aes(linetype = variant)) + ylim(0, NA) + labs(x = "Rep", y = "Size in bytes", title = "HMS: Size of Postgres dump", subtitle = analysis)
+    ggsave(paste0(outputBaseDir, "/", analysis, " hms.pdf"), title = paste0(analysis, ": hms"))
+
+    for (variant in unique(metricsSubset[["variant"]])) {
+
+        sarSubset <- sar[sar[["analysis"]] == analysis & sar[["variant"]] == variant, ]
+
+        ggplot(sarSubset, aes(timestamp, cpu_percent_user)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %user", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
+
+        ggplot(sarSubset, aes(timestamp, cpu_percent_system)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %system", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_cpu_system.pdf"), title = paste0(analysis, "/", variant, "/cpu/%system"))
+
+        ggplot(sarSubset, aes(timestamp, cpu_percent_idle)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %idle", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_cpu_idle.pdf"), title = paste0(analysis, "/", variant, "/cpu/%idle"))
+
+        ggplot(sarSubset, aes(timestamp, mem_percent_used)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "RAM: %memused", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_mem_memused.pdf"), title = paste0(analysis, "/", variant, "/mem/%memused"))
+
+        ggplot(sarSubset, aes(timestamp, io_tps)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: tps", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_io_tps.pdf"), title = paste0(analysis, "/", variant, "/io/tps"))
+
+        ggplot(sarSubset, aes(timestamp, io_rtps)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: rtps", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_io_rtps.pdf"), title = paste0(analysis, "/", variant, "/io/rtps"))
+
+        ggplot(sarSubset, aes(timestamp, io_wtps)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: wtps", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_io_wtps.pdf"), title = paste0(analysis, "/", variant, "/io/wtps"))
+
+        ggplot(sarSubset, aes(timestamp, disk_await)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "Disk: await", subtitle = paste0(analysis, "/", variant))
+        ggsave(paste0(outputDir, "/sar_disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
+
+        traceSubset <- trace[trace[["analysis"]] == analysis & trace[["variant"]] == variant, ]
+
+        ggplot(traceSubset[traceSubset[["type"]] == "op", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant))
+        ggsave(paste0(outputDir, "/trace_op.pdf"), title = paste0(analysis, "/", variant, "/trace_op"))
+
+        ggplot(traceSubset[traceSubset[["type"]] == "select", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant))
+        ggsave(paste0(outputDir, "/trace_select.pdf"), title = paste0(analysis, "/", variant, "/trace_select"))
+
+    }
 
 }
