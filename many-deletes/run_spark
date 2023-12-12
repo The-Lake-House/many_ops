@@ -12,14 +12,14 @@ mkdir -p "$OUTPUT_BASE_DIR"
 
 export HUDI_CONF_DIR=$PWD
 
-for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vectors delta_deletion_vectors; do
+for VARIANT in hudi_cow_insert hudi_mor_insert iceberg_cow iceberg_mor delta_no_deletion_vectors delta_deletion_vectors; do
 
     SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
-    if [[ "$VARIANT" == 'hudi_cow' ]]; then
+    if [[ "$VARIANT" == 'hudi_cow_insert' ]]; then
         FORMAT=hudi
         TBLPROPERTIES="TBLPROPERTIES (type = 'cow')"
-    elif [[ "$VARIANT" == 'hudi_mor' ]]; then
+    elif [[ "$VARIANT" == 'hudi_mor_insert' ]]; then
         FORMAT=hudi
         TBLPROPERTIES="TBLPROPERTIES (type = 'mor')"
     elif [[ "$VARIANT" == 'iceberg_cow' ]]; then
