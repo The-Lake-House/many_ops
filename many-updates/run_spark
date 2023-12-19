@@ -68,7 +68,7 @@ EOF
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "UPDATE data SET value = $((10#$REP));" &> /dev/null
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "UPDATE data SET value = $((10#$REP)) WHERE key = 1;" &> /dev/null
         kill -SIGINT $TRACE_PID
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
