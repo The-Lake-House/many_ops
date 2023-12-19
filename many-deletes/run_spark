@@ -2,7 +2,7 @@
 
 set -e
 
-NUM_REPS=50
+NUM_REPS=75
 
 SCHEMA_NAME=many_deletes
 BUCKET_NAME=many-deletes
