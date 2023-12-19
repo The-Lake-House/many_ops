@@ -12,7 +12,7 @@ mkdir -p "$OUTPUT_BASE_DIR"
 
 export HUDI_CONF_DIR=$PWD
 
-for VARIANT in hive hudi_cow hudi_mor iceberg_cow delta_no_deletion_vectors; do
+for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors; do
 
     SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
@@ -28,7 +28,7 @@ for VARIANT in hive hudi_cow hudi_mor iceberg_cow delta_no_deletion_vectors; do
         FORMAT=hudi
         OPTIONS=''
         TBLPROPERTIES="TBLPROPERTIES (type = 'cow', hoodie.spark.sql.insert.into.operation = 'bulk_insert')"
-    elif [[ "$VARIANT" == 'iceberg_cow' ]]; then
+    elif [[ "$VARIANT" == 'iceberg_mor' ]]; then
         FORMAT=iceberg
         OPTIONS=''
         TBLPROPERTIES=''
