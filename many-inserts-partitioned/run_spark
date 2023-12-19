@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+set -e
+
+NUM_REPS=75
+
+SCHEMA_NAME=many_inserts_partitioned
+BUCKET_NAME=many-inserts-partitioned
+
+OUTPUT_BASE_DIR=results
+mkdir -p "$OUTPUT_BASE_DIR"
+
+export HUDI_CONF_DIR=$PWD
+
+for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors; do
+
+    SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
+
+    if [[ "$VARIANT" == 'hive' ]]; then
+        FORMAT=hive
+        OPTIONS="OPTIONS (fileFormat = 'parquet')"
+        TBLPROPERTIES=''
+    elif [[ "$VARIANT" == 'hudi_cow' ]]; then
+        FORMAT=hudi
+        OPTIONS=''
+        TBLPROPERTIES="TBLPROPERTIES (type = 'cow', hoodie.spark.sql.insert.into.operation = 'insert')"
+    elif [[ "$VARIANT" == 'hudi_mor' ]]; then
+        FORMAT=hudi
+        OPTIONS=''
+        TBLPROPERTIES="TBLPROPERTIES (type = 'cow', hoodie.spark.sql.insert.into.operation = 'bulk_insert')"
+    elif [[ "$VARIANT" == 'iceberg_mor' ]]; then
+        FORMAT=iceberg
+        OPTIONS=''
+        TBLPROPERTIES=''
+        SPARK_CONF="$SPARK_CONF --conf spark.sql.catalog.spark_catalog.cache-enabled=false"
+    elif [[ "$VARIANT" == 'delta_no_deletion_vectors' ]]; then
+        FORMAT=delta
+        OPTIONS=''
+        TBLPROPERTIES="TBLPROPERTIES (delta.checkpointInterval = 2000000000)"
+    else
+        FORMAT="$VARIANT"
+        OPTIONS=''
+        TBLPROPERTIES=''
+    fi
+
+    OUTPUT_DIR="$OUTPUT_BASE_DIR/$VARIANT"
+    if [[ -d "$OUTPUT_DIR" ]]; then
+        echo "$OUTPUT_DIR already exists"
+        exit 1
+    fi
+
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
+    mcli mb -p "minio/$BUCKET_NAME"
+    mcli rb --force "minio/$BUCKET_NAME"
+
+    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms,res}
+
+    mcli mb "minio/$BUCKET_NAME"
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "$(cat << EOF
+CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
+CREATE TABLE $SCHEMA_NAME.data (key INT, value INT) USING $FORMAT PARTITIONED BY (key) $OPTIONS $TBLPROPERTIES;
+EOF
+)"
+
+    # Start sar monitoring
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
+    SAR_PID=$!
+
+    sleep 3
+
+    for REP in $(seq -w 1 "$NUM_REPS"); do
+
+        mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
+        TRACE_PID=$!
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "INSERT INTO data PARTITION (key = $((10#$REP))) VALUES (0);"
+        kill -SIGINT $TRACE_PID
+
+        mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
+        TRACE_PID=$!
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM data;' > "$OUTPUT_DIR/res/$REP"
+        kill -SIGINT $TRACE_PID
+
+        # Collect MinIO bucket size and number of objects
+        s3cmd du "s3://$BUCKET_NAME/" > "$OUTPUT_DIR/minio_du/$REP"
+
+        # Collect HMS SQL dump
+        sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
+
+        echo "$VARIANT: $REP / $NUM_REPS"
+
+    done
+
+    # Stop sar monitoring
+    kill -SIGINT $SAR_PID
+
+    spark-sql-hms-$FORMAT $SPARK_CONF -e "DROP SCHEMA $SCHEMA_NAME CASCADE;"
+    mcli rb --force "minio/$BUCKET_NAME"
+
+done
+
+unset HUDI_CONF_DIR
