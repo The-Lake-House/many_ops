@@ -53,7 +53,7 @@ for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors; do
     mcli mb -p "minio/$BUCKET_NAME"
     mcli rb --force "minio/$BUCKET_NAME"
 
-    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms,res}
+    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,hms,res}
 
     mcli mb "minio/$BUCKET_NAME"
     spark-sql-hms-$FORMAT $SPARK_CONF -e "$(cat << EOF
