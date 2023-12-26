@@ -18,21 +18,21 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
 
     if [[ "$VARIANT" == 'hudi_cow' ]]; then
         FORMAT=hudi
-        TBLPROPERTIES="TBLPROPERTIES (type = 'cow')"
+        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow')"
     elif [[ "$VARIANT" == 'hudi_mor' ]]; then
         FORMAT=hudi
-        TBLPROPERTIES="TBLPROPERTIES (type = 'mor')"
+        TBLPROPERTIES="TBLPROPERTIES ('type' = 'mor')"
     elif [[ "$VARIANT" == 'iceberg_cow' ]]; then
         FORMAT=iceberg
-        TBLPROPERTIES="TBLPROPERTIES (write.delete.mode = 'copy-on-write', write.update.mode = 'copy-on-write', write.merge.mode = 'copy-on-write')"
+        TBLPROPERTIES="TBLPROPERTIES ('write.delete.mode' = 'copy-on-write', 'write.update.mode' = 'copy-on-write', 'write.merge.mode' = 'copy-on-write')"
         SPARK_CONF="$SPARK_CONF --conf spark.sql.catalog.spark_catalog.cache-enabled=false"
     elif [[ "$VARIANT" == 'iceberg_mor' ]]; then
         FORMAT=iceberg
-        TBLPROPERTIES="TBLPROPERTIES (write.delete.mode = 'merge-on-read', write.update.mode = 'merge-on-read', write.merge.mode = 'merge-on-read')"
+        TBLPROPERTIES="TBLPROPERTIES ('write.delete.mode' = 'merge-on-read', 'write.update.mode' = 'merge-on-read', 'write.merge.mode' = 'merge-on-read')"
         SPARK_CONF="$SPARK_CONF --conf spark.sql.catalog.spark_catalog.cache-enabled=false"
     elif [[ "$VARIANT" == 'delta_no_deletion_vectors' ]]; then
         FORMAT=delta
-        TBLPROPERTIES="TBLPROPERTIES (delta.checkpointInterval = 2000000000)"
+        TBLPROPERTIES="TBLPROPERTIES ('delta.checkpointInterval' = 2000000000)"
     else
         FORMAT="$VARIANT"
         TBLPROPERTIES=''
