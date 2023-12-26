@@ -74,8 +74,6 @@ EOF
         spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "DELETE FROM data WHERE key = $((10#$REP));" &> /dev/null
         kill -SIGINT $TRACE_PID
 
-        sleep 1
-
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
         TRACE_PID=$!
         spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM data;' 2> /dev/null > "$OUTPUT_DIR/res/$REP"
