@@ -2,7 +2,7 @@
 
 set -e
 
-NUM_REPS=75
+NUM_REPS=125
 
 SCHEMA_NAME=many_inserts_partitioned
 BUCKET_NAME=many-inserts-partitioned
