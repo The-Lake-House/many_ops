@@ -7,6 +7,8 @@ NUM_REPS=125
 SCHEMA_NAME=many_deletes
 BUCKET_NAME=many-deletes
 
+SAR_DEV=nvme0n1p6
+
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
@@ -62,7 +64,7 @@ EOF
 )"
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev="$SAR_DEV" 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3

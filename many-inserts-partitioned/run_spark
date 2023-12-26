@@ -7,12 +7,15 @@ NUM_REPS=125
 SCHEMA_NAME=many_inserts_partitioned
 BUCKET_NAME=many-inserts-partitioned
 
+SAR_DEV=nvme0n1p6
+
 OUTPUT_BASE_DIR=results
 mkdir -p "$OUTPUT_BASE_DIR"
 
 export HUDI_CONF_DIR=$PWD
 
-for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors; do
+#for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors delta_no_deletion_vectors_checkpointed; do
+for VARIANT in delta_no_deletion_vectors_checkpointed; do
 
     SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
@@ -63,7 +66,7 @@ EOF
 )"
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev=nvme0n1 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev="$SAR_DEV" 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3

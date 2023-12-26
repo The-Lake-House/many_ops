@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+SAR_DEV=nvme0n1p6
+
 if [[ "$#" -lt 2 ]]; then
     echo "Usage: ./collect INPUT_BASE_DIR OUTPUT_BASE_DIR"
     exit 1
@@ -43,6 +45,6 @@ for INPUT_DIR in "$INPUT_BASE_DIR"/*/*; do
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -u > "$OUTPUT_DIR"/sar_cpu
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -r > "$OUTPUT_DIR"/sar_mem
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -b > "$OUTPUT_DIR"/sar_io
-    sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -d --dev=nvme0n1p6 > "$OUTPUT_DIR"/sar_disk
+    sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -d --dev="$SAR_DEV" > "$OUTPUT_DIR"/sar_disk
 
 done
