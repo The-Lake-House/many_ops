@@ -31,7 +31,7 @@ for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors; do
     elif [[ "$VARIANT" == 'iceberg_mor' ]]; then
         FORMAT=iceberg
         OPTIONS=''
-        TBLPROPERTIES=''
+        TBLPROPERTIES="TBLPROPERTIES ('commit.manifest-merge.enabled' = false)"
         SPARK_CONF="$SPARK_CONF --conf spark.sql.catalog.spark_catalog.cache-enabled=false"
     elif [[ "$VARIANT" == 'delta_no_deletion_vectors' ]]; then
         FORMAT=delta
