@@ -21,16 +21,16 @@ for CATALOG in iceberg delta; do
     fi
 
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
-    mcli mb "minio/$BUCKET_NAME"
+    mcli mb -p "minio/$BUCKET_NAME"
     mcli rb --force "minio/$BUCKET_NAME"
 
-    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,minio_ls,hms,res}
+    mkdir -p "$OUTPUT_DIR"/{sar,trace_op,trace_select,runtime_op,runtime_select,minio_du,hms,res}
 
     mcli mb "minio/$BUCKET_NAME"
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA IF NOT EXISTS $CATALOG.$SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA $SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
     # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT);'
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT, value INT);'
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "$(./datagen data $(($NUM_REPS + 1)))"
 
     # Start sar monitoring
@@ -48,17 +48,15 @@ for CATALOG in iceberg delta; do
         kill -SIGINT $TRACE_PID
         $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime_op/$REP"
 
-        sleep 1
-
         QUERY_ID="${CATALOG}_${REP}_select_$(openssl rand -hex 4)"
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
         TRACE_PID=$!
-        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/res/$REP"
+        $TRINO_HOME/bin/trino $TRINO_SESSION --source "$QUERY_ID" --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'SELECT * FROM data;' --output-format CSV_UNQUOTED 2> /dev/null > "$OUTPUT_DIR/res/$REP"
         kill -SIGINT $TRACE_PID
         $TRINO_HOME/bin/trino $TRINO_SESSION --execute "SELECT CAST(TO_UNIXTIME(started) AS INT), TO_MILLISECONDS(\"end\" - started) FROM system.runtime.queries WHERE source = '$QUERY_ID';" --output-format CSV_UNQUOTED 2>/dev/null > "$OUTPUT_DIR/runtime_select/$REP"
 
         # Collect MinIO bucket size and number of objects
-        s3cmd du "s3://$BUCKET_NAME" > "$OUTPUT_DIR/minio_du/$REP"
+        s3cmd du "s3://$BUCKET_NAME/" > "$OUTPUT_DIR/minio_du/$REP"
 
         # Collect HMS SQL dump
         sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
