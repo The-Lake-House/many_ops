@@ -20,7 +20,7 @@ for CATALOG in iceberg delta; do
         exit 1
     fi
 
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;'
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "DROP SCHEMA IF EXISTS $SCHEMA_NAME CASCADE;"
     mcli mb "minio/$BUCKET_NAME"
     mcli rb --force "minio/$BUCKET_NAME"
 
@@ -68,7 +68,7 @@ for CATALOG in iceberg delta; do
     # Stop sar monitoring
     kill -SIGINT $SAR_PID
 
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute 'DROP SCHEMA $SCHEMA_NAME CASCADE;'
+    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "DROP SCHEMA $SCHEMA_NAME CASCADE;"
     mcli rb --force "minio/$BUCKET_NAME"
 
 done
