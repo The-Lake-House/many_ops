@@ -235,10 +235,15 @@ for (analysis in levels(metrics[["analysis"]])) {
 
     for (variant in levels(metricsSubset[["variant"]])) {
 
+        sarSubset <- sar[sar[["analysis"]] == analysis & sar[["variant"]] == variant, ]
+
+        # Skip empty levels
+        if (nrow(sarSubset) == 0) {
+            next
+        }
+
         outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
         dir.create(outputDir, showWarnings = FALSE, recursive = TRUE)
-
-        sarSubset <- sar[sar[["analysis"]] == analysis & sar[["variant"]] == variant, ]
 
         ggplot(sarSubset, aes(timestamp, cpu_percent_user)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %user", subtitle = paste0(analysis, "/", variant))
         ggsave(paste0(outputDir, "/sar_cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
