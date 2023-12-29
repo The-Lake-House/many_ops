@@ -288,29 +288,29 @@ for (analysis in levels(metrics[["analysis"]])) {
 
 # Per metric
 ggplot(metrics, aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/du.pdf"), title = "du", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/du.pdf"), title = "du", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/du.svg"))
 
 ggplot(metrics, aes(rep, ls, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of files", linetype = "Variant", color = "Variant", title = "MinIO: Number of objects in bucket") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/ls.pdf"), title = "ls", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/ls.pdf"), title = "ls", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/ls.svg"))
 
 ggplot(metrics, aes(rep, trace_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "MinIO: Number of S3 requests during update operation") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/trace_op.pdf"), title = "trace_op", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/trace_op.pdf"), title = "trace_op", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/trace_op.svg"))
 
 ggplot(metrics, aes(rep, trace_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "MinIO: Number of S3 requests during table scan") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/trace_select.pdf"), title = "trace_select", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/trace_select.pdf"), title = "trace_select", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/trace_select.svg"))
 
 ggplot(metrics, aes(rep, runtime_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "Query runtime during update operation") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/runtime_op.pdf"), title = "runtime_op", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/runtime_op.pdf"), title = "runtime_op", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/runtime_op.svg"))
 
 ggplot(metrics, aes(rep, runtime_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "Query runtime during table scan") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/runtime_select.pdf"), title = "runtime_select", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/runtime_select.pdf"), title = "runtime_select", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/runtime_select.svg"))
 
 ggplot(metrics, aes(rep, hms, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in bytes", linetype = "Variant", color = "Variant", title = "HMS: Size of Postgres dump") + facet_wrap(vars(analysis))
-ggsave(paste0(outputBaseDir, "/hms.pdf"), title = "hms", width = 15, height = 10, unit = "in")
+ggsave(paste0(outputBaseDir, "/hms.pdf"), title = "hms", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/hms.svg"))
