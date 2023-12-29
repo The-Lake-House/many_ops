@@ -9,7 +9,7 @@ BUCKET_NAME=many-inserts
 
 SAR_DEV=nvme0n1p6
 
-OUTPUT_BASE_DIR=results
+OUTPUT_BASE_DIR="results/raw/$SCHEMA"
 mkdir -p "$OUTPUT_BASE_DIR"
 
 export HUDI_CONF_DIR=$PWD
