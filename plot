@@ -182,6 +182,12 @@ trace[["variant"]] <- factor(
     labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
 )
 
+trace[["req"]] <- factor(
+    trace[["req"]],
+    levels = unique(trace[["req"]]),
+    labels = unique(trace[["req"]])
+)
+
 for (analysis in levels(metrics[["analysis"]])) {
 
     metricsSubset <- metrics[metrics[["analysis"]] == analysis, ]
@@ -233,6 +239,9 @@ for (analysis in levels(metrics[["analysis"]])) {
     ggsave(paste0(outputBaseDir, "/", analysis, ".pdf"), plot = p, title = analysis, width = 10, height = 15)
     ggsave(paste0(outputBaseDir, "/", analysis, ".svg"), plot = p, width = 10, height = 15)
 
+    traceOpPlots <- list()
+    traceSelectPlots <- list()
+
     for (variant in levels(metricsSubset[["variant"]])) {
 
         sarSubset <- sar[sar[["analysis"]] == analysis & sar[["variant"]] == variant, ]
@@ -279,15 +288,37 @@ for (analysis in levels(metrics[["analysis"]])) {
 
         traceSubset <- trace[trace[["analysis"]] == analysis & trace[["variant"]] == variant, ]
 
-        ggplot(traceSubset[traceSubset[["type"]] == "op", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant))
-        ggsave(paste0(outputDir, "/trace_op.pdf"), title = paste0(analysis, "/", variant, "/trace_op"))
-        ggsave(paste0(outputDir, "/trace_op.svg"))
+        p_op <- ggplot(traceSubset[traceSubset[["type"]] == "op", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
+        ggsave(paste0(outputDir, "/trace_op.pdf"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)), title = paste0(analysis, "/", variant, "/trace_op"))
+        ggsave(paste0(outputDir, "/trace_op.svg"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)))
+        traceOpPlots <- c(traceOpPlots, list(p_op + labs(title = variant)))
 
-        ggplot(traceSubset[traceSubset[["type"]] == "select", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation", title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant))
-        ggsave(paste0(outputDir, "/trace_select.pdf"), title = paste0(analysis, "/", variant, "/trace_select"))
-        ggsave(paste0(outputDir, "/trace_select.svg"))
+        p_select <- ggplot(traceSubset[traceSubset[["type"]] == "select", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
+        ggsave(paste0(outputDir, "/trace_select.pdf"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)), title = paste0(analysis, "/", variant, "/trace_select"))
+        ggsave(paste0(outputDir, "/trace_select.svg"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)))
+        traceSelectPlots <- c(traceSelectPlots, list(p_select + labs(title = variant)))
 
     }
+
+    legend <- get_legend(traceOpPlots[[1]])
+    for (i in seq_along(traceOpPlots)) {
+        traceOpPlots[[i]] <- traceOpPlots[[i]] + guides(fill = "none")
+    }
+    traceOpPlots <- c(traceOpPlots, list(legend))
+    traceOpPlots <- c(traceOpPlots, list(ncol = 2))
+    p_op <- do.call(arrangeGrob, traceOpPlots)
+    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op_reqs.pdf"), plot = p_op, title = analysis, width = 10, height = 15)
+    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op_reqs.svg"), plot = p_op, width = 10, height = 15)
+
+    legend <- get_legend(traceSelectPlots[[1]])
+    for (i in seq_along(traceSelectPlots)) {
+        traceSelectPlots[[i]] <- traceSelectPlots[[i]] + guides(fill = "none")
+    }
+    traceSelectPlots <- c(traceSelectPlots, list(legend))
+    traceSelectPlots <- c(traceSelectPlots, list(ncol = 2))
+    p_select <- do.call(arrangeGrob, traceSelectPlots)
+    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select_reqs.pdf"), plot = p_select, title = analysis, width = 10, height = 15)
+    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select_reqs.svg"), plot = p_select, width = 10, height = 15)
 
 }
 
