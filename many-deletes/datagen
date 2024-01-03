@@ -10,4 +10,4 @@ table_name = sys.argv[1]
 num_values = int(sys.argv[2])
 
 print(f"""INSERT INTO {table_name}
-SELECT /*+ REPARTITION(1) */ * FROM VALUES {', '.join('(' + str(val) + ', 0)' for val in range(1, num_values + 1))};""")
+SELECT /*+ COALESCE(1) */ * FROM VALUES {', '.join('(' + str(val) + ', 0)' for val in range(1, num_values + 1))};""")
