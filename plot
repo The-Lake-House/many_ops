@@ -288,12 +288,12 @@ for (analysis in levels(metrics[["analysis"]])) {
 
         traceSubset <- trace[trace[["analysis"]] == analysis & trace[["variant"]] == variant, ]
 
-        p_op <- ggplot(traceSubset[traceSubset[["type"]] == "op", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
+        p_op <- ggplot(traceSubset[traceSubset[["type"]] == "op", ], aes(rep, fill = req)) + geom_bar(width = 1) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
         ggsave(paste0(outputDir, "/trace_op.pdf"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)), title = paste0(analysis, "/", variant, "/trace_op"))
         ggsave(paste0(outputDir, "/trace_op.svg"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)))
         traceOpPlots <- c(traceOpPlots, list(p_op + labs(title = variant)))
 
-        p_select <- ggplot(traceSubset[traceSubset[["type"]] == "select", ], aes(rep, fill = req)) + geom_bar() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
+        p_select <- ggplot(traceSubset[traceSubset[["type"]] == "select", ], aes(rep, fill = req)) + geom_bar(width = 1) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
         ggsave(paste0(outputDir, "/trace_select.pdf"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)), title = paste0(analysis, "/", variant, "/trace_select"))
         ggsave(paste0(outputDir, "/trace_select.svg"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)))
         traceSelectPlots <- c(traceSelectPlots, list(p_select + labs(title = variant)))
