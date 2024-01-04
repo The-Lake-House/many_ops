@@ -220,12 +220,12 @@ for (analysis in levels(metrics[["analysis"]])) {
     ggsave(paste0(outputBaseDir, "/", analysis, " hms.pdf"), title = paste0(analysis, ": hms"))
     ggsave(paste0(outputBaseDir, "/", analysis, " hms.svg"))
 
-    p1 <- ggplot(metricsSubset, aes(rep, trace_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "MinIO: Number of S3 requests during update operation") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    p2 <- ggplot(metricsSubset, aes(rep, trace_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "MinIO: Number of S3 requests during table scan") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    p3 <- ggplot(metricsSubset, aes(rep, runtime_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "Query runtime during update operation") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    p4 <- ggplot(metricsSubset, aes(rep, runtime_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "Query runtime during table scan") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    p5 <- ggplot(metricsSubset, aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    p6 <- ggplot(metricsSubset, aes(rep, ls, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of files", linetype = "Variant", color = "Variant", title = "MinIO: Number of objects in bucket") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
+    p1 <- ggplot(metricsSubset, aes(rep, runtime_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "a) Query runtime during update op.") + theme(legend.position = "top") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
+    p2 <- ggplot(metricsSubset, aes(rep, runtime_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "b) Query runtime during table scan") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
+    p3 <- ggplot(metricsSubset, aes(rep, trace_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "c) Number of S3 requests during update op.") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
+    p4 <- ggplot(metricsSubset, aes(rep, trace_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "d) Number of S3 requests during table scan") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
+    p5 <- ggplot(metricsSubset, aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "e) Total size of bucket") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
+    p6 <- ggplot(metricsSubset, aes(rep, ls, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of files", linetype = "Variant", color = "Variant", title = "f) Number of objects in bucket") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
     legend <- get_legend(p1)
     p1 <- p1 + guides(linetype = "none", color = "none")
     p <- arrangeGrob(p1, p2, p3, p4, p5, p6, legend,
@@ -234,7 +234,8 @@ for (analysis in levels(metrics[["analysis"]])) {
             c(1, 2, 3, 4, 5, 6, 7, 7),
             ncol = 2,
             byrow = TRUE
-        )
+        ),
+        heights = c(5/16, 5/16, 5/16, 1/16)
     )
     ggsave(paste0(outputBaseDir, "/", analysis, ".pdf"), plot = p, title = analysis, width = 10, height = 15)
     ggsave(paste0(outputBaseDir, "/", analysis, ".svg"), plot = p, width = 10, height = 15)
