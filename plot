@@ -329,12 +329,12 @@ ggsave(paste0(outputBaseDir, "/du.pdf"), title = "du", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/du.svg"), width = 15, height = 10)
 
 # Produce extra plot without Hudi
-ggplot(metrics[!metrics[["variant"]] %in% c("Hudi (CoW)", "Hudi (MoR)") & metrics[["analysis"]] != "Many Inserts (Partitioned)", ], aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket (without Hudi)") + facet_wrap(vars(analysis), ncol = 2) + theme(legend.position = "top") + guides(linetype = guide_legend(nrow = 3, byrow = TRUE), color = guide_legend(nrow = 2, byrow = TRUE))
+ggplot(metrics[metrics[["variant"]] != "Hudi (CoW)" & !(metrics[["analysis"]] == "Many Inserts" & metrics[["variant"]] == "Hudi (MoR)") & metrics[["analysis"]] != "Many Inserts (Partitioned)", ], aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket without Hudi (CoW)") + facet_wrap(vars(analysis), ncol = 2) + theme(legend.position = "top") + guides(linetype = guide_legend(ncol = 2), color = guide_legend(ncol = 2)) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
 ggsave(paste0(outputBaseDir, "/du_wo_hudi.pdf"), title = "du without Hudi", height = 10)
 ggsave(paste0(outputBaseDir, "/du_wo_hudi.svg"), height = 10)
 
 # Produce extra plot without Hudi and Iceberg
-ggplot(metrics[!metrics[["variant"]] %in% c("Hudi (CoW)", "Hudi (MoR)", "Iceberg (MoR)", "Iceberg (CoW)") & metrics[["analysis"]] != "Many Inserts (Partitioned)", ], aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket (without Hudi and Iceberg)") + facet_wrap(vars(analysis), ncol = 2) + theme(legend.position = "top") + guides(linetype = guide_legend(nrow = 2, byrow = TRUE), color = guide_legend(nrow = 2, byrow = TRUE))
+ggplot(metrics[!metrics[["variant"]] %in% c("Hudi (CoW)", "Hudi (MoR)", "Iceberg (MoR)", "Iceberg (CoW)") & metrics[["analysis"]] != "Many Inserts (Partitioned)", ], aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket (without Hudi and Iceberg)") + facet_wrap(vars(analysis), ncol = 2) + theme(legend.position = "top") + guides(linetype = guide_legend(ncol = 2), color = guide_legend(ncol = 2)) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
 ggsave(paste0(outputBaseDir, "/du_wo_hudi_iceberg.pdf"), title = "du without Hudi and Iceberg", height = 10)
 ggsave(paste0(outputBaseDir, "/du_wo_hudi_iceberg.svg"), height = 10)
 
