@@ -151,7 +151,7 @@ metrics[["analysis"]] <- factor(
 metrics[["variant"]] <- factor(
     metrics[["variant"]],
     levels = c("hive", "hudi_cow", "hudi_mor", "iceberg_cow", "iceberg_mor", "delta_no_deletion_vectors", "delta_deletion_vectors"),
-    labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
+    labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta Lake (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
 )
 
 metrics[["du"]] <- metrics[["du"]] / 1024
@@ -165,7 +165,7 @@ sar[["analysis"]] <- factor(
 sar[["variant"]] <- factor(
     sar[["variant"]],
     levels = c("hive", "hudi_cow", "hudi_mor", "iceberg_cow", "iceberg_mor", "delta_no_deletion_vectors", "delta_deletion_vectors"),
-    labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
+    labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta Lake (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
 )
 
 sar[["timestamp"]] <- as.POSIXct(sar[["timestamp"]], tz = "UTC")
@@ -179,7 +179,7 @@ trace[["analysis"]] <- factor(
 trace[["variant"]] <- factor(
     trace[["variant"]],
     levels = c("hive", "hudi_cow", "hudi_mor", "iceberg_cow", "iceberg_mor", "delta_no_deletion_vectors", "delta_deletion_vectors"),
-    labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
+    labels = c("Hive", "Hudi (CoW)", "Hudi (MoR)", "Iceberg (CoW)", "Iceberg (MoR)", "Delta Lake (Without Deletion Vectors)", "Delta Lake (With Deletion Vectors)")
 )
 
 trace[["req"]] <- factor(
