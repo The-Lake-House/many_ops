@@ -328,6 +328,16 @@ ggplot(metrics, aes(rep, du, linetype = variant, color = variant)) + geom_line()
 ggsave(paste0(outputBaseDir, "/du.pdf"), title = "du", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/du.svg"), width = 15, height = 10)
 
+# Produce extra plot without Hudi
+ggplot(metrics[!metrics[["variant"]] %in% c("Hudi (CoW)", "Hudi (MoR)") & metrics[["analysis"]] != "Many Inserts (Partitioned)", ], aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket (without Hudi)") + facet_wrap(vars(analysis), ncol = 2) + theme(legend.position = "top") + guides(linetype = guide_legend(nrow = 3, byrow = TRUE), color = guide_legend(nrow = 2, byrow = TRUE))
+ggsave(paste0(outputBaseDir, "/du_wo_hudi.pdf"), title = "du without Hudi", height = 10)
+ggsave(paste0(outputBaseDir, "/du_wo_hudi.svg"), height = 10)
+
+# Produce extra plot without Hudi and Iceberg
+ggplot(metrics[!metrics[["variant"]] %in% c("Hudi (CoW)", "Hudi (MoR)", "Iceberg (MoR)", "Iceberg (CoW)") & metrics[["analysis"]] != "Many Inserts (Partitioned)", ], aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket (without Hudi and Iceberg)") + facet_wrap(vars(analysis), ncol = 2) + theme(legend.position = "top") + guides(linetype = guide_legend(nrow = 2, byrow = TRUE), color = guide_legend(nrow = 2, byrow = TRUE))
+ggsave(paste0(outputBaseDir, "/du_wo_hudi_iceberg.pdf"), title = "du without Hudi and Iceberg", height = 10)
+ggsave(paste0(outputBaseDir, "/du_wo_hudi_iceberg.svg"), height = 10)
+
 ggplot(metrics, aes(rep, ls, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of files", linetype = "Variant", color = "Variant", title = "MinIO: Number of objects in bucket") + facet_wrap(vars(analysis))
 ggsave(paste0(outputBaseDir, "/ls.pdf"), title = "ls", width = 15, height = 10)
 ggsave(paste0(outputBaseDir, "/ls.svg"), width = 15, height = 10)
