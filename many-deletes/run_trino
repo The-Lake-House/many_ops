@@ -12,7 +12,7 @@ SAR_DEV=nvme0n1p6
 OUTPUT_BASE_DIR="results/raw/$SCHEMA"
 mkdir -p "$OUTPUT_BASE_DIR"
 
-TRINO_SESSION='--session=hive.hive_storage_format=PARQUET --session=delta.compression_codec=GZIP --session=iceberg.compression_codec=GZIP'
+TRINO_SESSION='--session=iceberg.compression_codec=GZIP --session=delta.compression_codec=GZIP'
 
 for CATALOG in iceberg delta; do
 
@@ -31,7 +31,7 @@ for CATALOG in iceberg delta; do
     mcli mb "minio/$BUCKET_NAME"
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA $SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
-    # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
+    # Relies on iceberg.file-format = PARQUET (default)
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT, value INT);'
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "$(./datagen data $(($NUM_REPS + 1)))"
 

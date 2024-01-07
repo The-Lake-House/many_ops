@@ -12,7 +12,7 @@ SAR_DEV=nvme0n1p6
 OUTPUT_BASE_DIR="results/raw/$SCHEMA"
 mkdir -p "$OUTPUT_BASE_DIR"
 
-TRINO_SESSION='--session=hive.hive_storage_format=PARQUET --session=delta.compression_codec=GZIP --session=iceberg.compression_codec=GZIP'
+TRINO_SESSION='--session=hive.compression_codec=GZIP --session=iceberg.compression_codec=GZIP --session=delta.compression_codec=GZIP'
 
 for CATALOG in hive iceberg delta; do
 
@@ -31,8 +31,12 @@ for CATALOG in hive iceberg delta; do
     mcli mb "minio/$BUCKET_NAME"
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --execute "CREATE SCHEMA $SCHEMA_NAME WITH (location = 's3a://$BUCKET_NAME/');"
 
-    # Relies on hive.storage-format, iceberg.file-format, and *.compression-codec being set
-    $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT, value INT);'
+    # Relies on iceberg.file-format = PARQUET (default)
+    if [[ "$CATALOG" == 'hive' ]]; then
+        $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "CREATE TABLE data (key INT, value INT) WITH (format = 'PARQUET');"
+    else
+        $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute 'CREATE TABLE data (key INT, value INT);'
+    fi
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev="$SAR_DEV" 1 &> /dev/null &
