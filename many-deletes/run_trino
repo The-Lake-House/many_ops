@@ -7,8 +7,6 @@ NUM_REPS=125
 SCHEMA_NAME=many_deletes
 BUCKET_NAME=many-deletes
 
-SAR_DEV=nvme0n1p6
-
 OUTPUT_BASE_DIR="results/raw/$SCHEMA"
 mkdir -p "$OUTPUT_BASE_DIR"
 
@@ -36,7 +34,7 @@ for CATALOG in iceberg delta; do
     $TRINO_HOME/bin/trino $TRINO_SESSION --catalog "$CATALOG" --schema "$SCHEMA_NAME" --execute "$(./datagen data $(($NUM_REPS + 1)))"
 
     # Start sar monitoring
-    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -u -r -b -d --dev="$SAR_DEV" 1 &> /dev/null &
+    sar -o "$OUTPUT_DIR/sar/benchmark.sar" -A 1 &> /dev/null &
     SAR_PID=$!
 
     sleep 3
