@@ -56,8 +56,8 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
     mcli mb "minio/$BUCKET_NAME"
     spark-sql-hms-$FORMAT $SPARK_CONF -e "$(cat << EOF
 CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
-CREATE TABLE $SCHEMA_NAME.data (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
-$(./datagen $SCHEMA_NAME.data $(($NUM_REPS + 1)))
+CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
+$(./datagen $SCHEMA_NAME.store $(($NUM_REPS + 1)))
 EOF
 )"
 
@@ -71,12 +71,12 @@ EOF
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "DELETE FROM data WHERE key = $((10#$REP));" &> /dev/null
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "DELETE FROM store WHERE key = $((10#$REP));" &> /dev/null
         kill -SIGINT $TRACE_PID
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM data;' 2> /dev/null > "$OUTPUT_DIR/res/$REP"
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM store;' 2> /dev/null > "$OUTPUT_DIR/res/$REP"
         kill -SIGINT $TRACE_PID
 
         # Collect MinIO bucket size and number of objects
