@@ -54,7 +54,7 @@ for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vecto
     spark-sql-hms-$FORMAT $SPARK_CONF -e "$(cat << EOF
 CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
 CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
-INSERT INTO $SCHEMA_NAME.store VALUES (1, 0);
+$(../datagen $SCHEMA_NAME.store 1)
 EOF
 )"
 
