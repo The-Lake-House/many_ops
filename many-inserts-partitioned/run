@@ -88,7 +88,7 @@ EOF
         # Collect HMS SQL dump
         sudo -u postgres pg_dump hms > "$OUTPUT_DIR/hms/$REP"
 
-        echo "$VARIANT: $REP / $NUM_REPS"
+        echo "$SCHEMA_NAME - $VARIANT: $REP / $NUM_REPS"
 
     done
 
