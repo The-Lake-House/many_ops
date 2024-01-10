@@ -3,7 +3,7 @@
 set -eu
 
 NUM_REPS=125
-SCALE_FACTOR=1
+NUM_ROWS=$(($NUM_REPS + 1))
 
 SCHEMA_NAME=many_deletes
 BUCKET_NAME=many-deletes
@@ -61,7 +61,8 @@ CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
 CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
 EOF
 )"
-    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $(($SCALE_FACTOR * $NUM_REPS + 1)))
+    # Make sure NUM_ROWS is at least NUM_REPS + 1 to not end up with empty files
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $(($NUM_ROWS > ($NUM_REPS + 1) ? $NUM_ROWS : $NUM_REPS + 1)))
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -A 1 &> /dev/null &

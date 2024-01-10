@@ -3,7 +3,7 @@
 set -eu
 
 NUM_REPS=125
-SCALE_FACTOR=1
+NUM_ROWS=1
 
 SCHEMA_NAME=many_updates
 BUCKET_NAME=many-updates
@@ -58,7 +58,7 @@ CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
 CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
 EOF
 )"
-    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $SCALE_FACTOR)
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $NUM_ROWS)
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -A 1 &> /dev/null &
