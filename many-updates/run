@@ -58,7 +58,7 @@ CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
 CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
 EOF
 )"
-    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $(($SCALE_FACTOR * 1)))
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $SCALE_FACTOR)
 
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -A 1 &> /dev/null &
