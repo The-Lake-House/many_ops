@@ -7,7 +7,8 @@ NUM_REPS=125
 SCHEMA_NAME=many_inserts_partitioned
 BUCKET_NAME=many-inserts-partitioned
 
-OUTPUT_BASE_DIR="results/raw/$SCHEMA"
+# OUTPUT_BASE_DIR has to be absolute for Spark logs
+OUTPUT_BASE_DIR="$PWD/../results/raw/$SCHEMA"
 mkdir -p "$OUTPUT_BASE_DIR"
 
 export HUDI_CONF_DIR=$PWD
