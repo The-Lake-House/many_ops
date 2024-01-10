@@ -3,11 +3,14 @@
 import sys
 
 if len(sys.argv) < 3:
-    print("Usage: ./datagen.py TABLE_NAME NUM_VALUES")
+    print("Usage: ./datagen.py TABLE_NAME NUM_VALUES [START_VALUE]")
     sys.exit(1)
 
 table_name = sys.argv[1]
 num_values = int(sys.argv[2])
+start_value = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+
+values = ', '.join('(' + str(val) + ', 0)' for val in range(start_value, start_value + num_values))
 
 print(f"""INSERT INTO {table_name}
-SELECT /*+ COALESCE(1) */ * FROM VALUES {', '.join('(' + str(val) + ', 0)' for val in range(1, num_values + 1))};""")
+SELECT /*+ COALESCE(1) */ * FROM (VALUES {values});""")
