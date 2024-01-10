@@ -61,6 +61,7 @@ CREATE SCHEMA $SCHEMA_NAME LOCATION 's3a://$BUCKET_NAME/';
 CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $TBLPROPERTIES;
 EOF
 )"
+
     # Make sure NUM_ROWS is at least NUM_REPS + 1 to not end up with empty files
     spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $(($NUM_ROWS > ($NUM_REPS + 1) ? $NUM_ROWS : $NUM_REPS + 1)))
 

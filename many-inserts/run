@@ -64,6 +64,9 @@ CREATE TABLE $SCHEMA_NAME.store (key INT, value INT) USING $FORMAT $OPTIONS $TBL
 EOF
 )"
 
+    # Create initial rows; NO-OP for NUM_ROWS=0
+    spark-sql-hms-$FORMAT $SPARK_CONF --database "$SCHEMA_NAME" -f <(../datagen store $NUM_ROWS)
+
     # Start sar monitoring
     sar -o "$OUTPUT_DIR/sar/benchmark.sar" -A 1 &> /dev/null &
     SAR_PID=$!
@@ -74,7 +77,7 @@ EOF
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -f <(../datagen store $NUM_ROWS $(($NUM_ROWS * (10#$REP - 1) + 1))) &> /dev/null
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" --database "$SCHEMA_NAME" -e "INSERT INTO store VALUES ($(($NUM_ROWS + 10#$REP)), 0);" &> /dev/null
         kill -SIGINT $TRACE_PID
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
