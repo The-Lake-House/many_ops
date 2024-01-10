@@ -9,7 +9,7 @@ SCHEMA_NAME=many_inserts
 BUCKET_NAME=many-inserts
 
 # OUTPUT_BASE_DIR has to be absolute for Spark logs
-OUTPUT_BASE_DIR="$PWD/../results/raw/$SCHEMA"
+OUTPUT_BASE_DIR="$PWD/../results/raw/$SCHEMA_NAME"
 mkdir -p "$OUTPUT_BASE_DIR"
 
 export HUDI_CONF_DIR=$PWD
