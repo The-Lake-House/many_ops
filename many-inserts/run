@@ -3,6 +3,7 @@
 set -e
 
 NUM_REPS=125
+SCALE_FACTOR=1
 
 SCHEMA_NAME=many_inserts
 BUCKET_NAME=many-inserts
@@ -72,7 +73,7 @@ EOF
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "$(../datagen store 1 $((10#$REP)))" &> /dev/null
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "$(../datagen store $SCALE_FACTOR $(($SCALE_FACTOR * (10#$REP - 1) + 1)))" &> /dev/null
         kill -SIGINT $TRACE_PID
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
