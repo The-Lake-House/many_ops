@@ -75,12 +75,12 @@ EOF
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_op/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "INSERT INTO store VALUES ($(($NUM_ROWS + 10#$REP)), 0);" &> /dev/null
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=$OUTPUT_DIR/runtime_op" --database "$SCHEMA_NAME" -e "INSERT INTO store VALUES ($(($NUM_ROWS + 10#$REP)), 0);" &> /dev/null
         kill -SIGINT $TRACE_PID
 
         mcli admin trace minio > "$OUTPUT_DIR/trace_select/$REP" &
         TRACE_PID=$!
-        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=file://$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM store;' 2> /dev/null > "$OUTPUT_DIR/res/$REP"
+        spark-sql-hms-$FORMAT $SPARK_CONF --conf spark.eventLog.enabled=true --conf "spark.eventLog.dir=$OUTPUT_DIR/runtime_select" --database "$SCHEMA_NAME" -e 'SELECT * FROM store;' 2> /dev/null > "$OUTPUT_DIR/res/$REP"
         kill -SIGINT $TRACE_PID
 
         # Collect MinIO bucket size and number of objects
