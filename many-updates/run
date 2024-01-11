@@ -12,18 +12,16 @@ BUCKET_NAME=many-updates
 OUTPUT_BASE_DIR="$PWD/../results/raw/$SCHEMA_NAME"
 mkdir -p "$OUTPUT_BASE_DIR"
 
-export HUDI_CONF_DIR=$PWD
-
 for VARIANT in hudi_cow hudi_mor iceberg_cow iceberg_mor delta_no_deletion_vectors; do
 
     SPARK_CONF='--conf spark.sql.parquet.compression.codec=gzip'
 
     if [[ "$VARIANT" == 'hudi_cow' ]]; then
         FORMAT=hudi
-        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow')"
+        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow', 'hoodie.metadata.enabled' = false, 'hoodie.table.services.enabled' = false, 'hoodie.embed.timeline.server' = false)"
     elif [[ "$VARIANT" == 'hudi_mor' ]]; then
         FORMAT=hudi
-        TBLPROPERTIES="TBLPROPERTIES ('type' = 'mor')"
+        TBLPROPERTIES="TBLPROPERTIES ('type' = 'mor', 'hoodie.metadata.enabled' = false, 'hoodie.table.services.enabled' = false, 'hoodie.embed.timeline.server' = false)"
     elif [[ "$VARIANT" == 'iceberg_cow' ]]; then
         FORMAT=iceberg
         TBLPROPERTIES="TBLPROPERTIES ('write.delete.mode' = 'copy-on-write', 'write.update.mode' = 'copy-on-write', 'write.merge.mode' = 'copy-on-write', 'commit.manifest-merge.enabled' = false)"
@@ -96,5 +94,3 @@ EOF
     mcli rb --force "minio/$BUCKET_NAME"
 
 done
-
-unset HUDI_CONF_DIR

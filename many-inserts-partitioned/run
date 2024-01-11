@@ -11,8 +11,6 @@ BUCKET_NAME=many-inserts-partitioned
 OUTPUT_BASE_DIR="$PWD/../results/raw/$SCHEMA_NAME"
 mkdir -p "$OUTPUT_BASE_DIR"
 
-export HUDI_CONF_DIR=$PWD
-
 #for VARIANT in hive hudi_cow hudi_mor iceberg_mor delta_no_deletion_vectors delta_no_deletion_vectors_checkpointed; do
 for VARIANT in delta_no_deletion_vectors_checkpointed; do
 
@@ -25,11 +23,11 @@ for VARIANT in delta_no_deletion_vectors_checkpointed; do
     elif [[ "$VARIANT" == 'hudi_cow' ]]; then
         FORMAT=hudi
         OPTIONS=''
-        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow', 'hoodie.spark.sql.insert.into.operation' = 'insert')"
+        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow', 'hoodie.spark.sql.insert.into.operation' = 'insert', 'hoodie.metadata.enabled' = false, 'hoodie.table.services.enabled' = false, 'hoodie.embed.timeline.server' = false)"
     elif [[ "$VARIANT" == 'hudi_mor' ]]; then
         FORMAT=hudi
         OPTIONS=''
-        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow', 'hoodie.spark.sql.insert.into.operation' = 'bulk_insert')"
+        TBLPROPERTIES="TBLPROPERTIES ('type' = 'cow', 'hoodie.spark.sql.insert.into.operation' = 'bulk_insert', 'hoodie.metadata.enabled' = false, 'hoodie.table.services.enabled' = false, 'hoodie.embed.timeline.server' = false)"
     elif [[ "$VARIANT" == 'iceberg_mor' ]]; then
         FORMAT=iceberg
         OPTIONS=''
@@ -99,5 +97,3 @@ EOF
     mcli rb --force "minio/$BUCKET_NAME"
 
 done
-
-unset HUDI_CONF_DIR
