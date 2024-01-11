@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eu
+
 SAR_DEV=nvme0n1p6
 
 if [[ "$#" -lt 2 ]]; then
