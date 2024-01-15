@@ -195,33 +195,36 @@ for (analysis in levels(metrics[["analysis"]])) {
 
     metricsSubset <- metrics[metrics[["analysis"]] == analysis, ]
 
+    analysisOutputDir <- paste0(outputBaseDir, "/", analysis)
+    dir.create(analysisOutputDir, showWarnings = FALSE, recursive = TRUE)
+
     ggplot(metricsSubset, aes(rep, du, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in KiB", linetype = "Variant", color = "Variant", title = "MinIO: Total size of bucket", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " du.pdf"), title = paste0(analysis, ": du"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " du.svg"))
+    ggsave(paste0(analysisOutputDir, "/du.pdf"), title = paste0(analysis, ": du"))
+    ggsave(paste0(analysisOutputDir, "/du.svg"))
 
     ggplot(metricsSubset, aes(rep, ls, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of files", linetype = "Variant", color = "Variant", title = "MinIO: Number of objects in bucket", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " ls.pdf"), title = paste0(analysis, ": ls"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " ls.svg"))
+    ggsave(paste0(analysisOutputDir, "/ls.pdf"), title = paste0(analysis, ": ls"))
+    ggsave(paste0(analysisOutputDir, "/ls.svg"))
 
     ggplot(metricsSubset, aes(rep, trace_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "MinIO: Number of S3 requests during update operation", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op.pdf"), title = paste0(analysis, ": trace_op"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op.svg"))
+    ggsave(paste0(analysisOutputDir, "/trace_op.pdf"), title = paste0(analysis, ": trace_op"))
+    ggsave(paste0(analysisOutputDir, "/trace_op.svg"))
 
     ggplot(metricsSubset, aes(rep, trace_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", linetype = "Variant", color = "Variant", title = "MinIO: Number of S3 requests during table scan", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select.pdf"), title = paste0(analysis, ": trace_select"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select.svg"))
+    ggsave(paste0(analysisOutputDir, "/trace_select.pdf"), title = paste0(analysis, ": trace_select"))
+    ggsave(paste0(analysisOutputDir, "/trace_select.svg"))
 
     ggplot(metricsSubset, aes(rep, runtime_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "Query runtime during update operation", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " runtime_op.pdf"), title = paste0(analysis, ": runtime_op"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " runtime_op.svg"))
+    ggsave(paste0(analysisOutputDir, "/runtime_op.pdf"), title = paste0(analysis, ": runtime_op"))
+    ggsave(paste0(analysisOutputDir, "/runtime_op.svg"))
 
     ggplot(metricsSubset, aes(rep, runtime_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "Query runtime during table scan", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " runtime_select.pdf"), title = paste0(analysis, ": runtime_select"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " runtime_select.svg"))
+    ggsave(paste0(analysisOutputDir, "/runtime_select.pdf"), title = paste0(analysis, ": runtime_select"))
+    ggsave(paste0(analysisOutputDir, "/runtime_select.svg"))
 
     ggplot(metricsSubset, aes(rep, hms, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Size in bytes", linetype = "Variant", color = "Variant", title = "HMS: Size of Postgres dump", subtitle = analysis) + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
-    ggsave(paste0(outputBaseDir, "/", analysis, " hms.pdf"), title = paste0(analysis, ": hms"))
-    ggsave(paste0(outputBaseDir, "/", analysis, " hms.svg"))
+    ggsave(paste0(analysisOutputDir, "/hms.pdf"), title = paste0(analysis, ": hms"))
+    ggsave(paste0(analysisOutputDir, "/hms.svg"))
 
     p1 <- ggplot(metricsSubset, aes(rep, runtime_op, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "a) Query runtime during update op.") + theme(legend.position = "top") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
     p2 <- ggplot(metricsSubset, aes(rep, runtime_select, linetype = variant, color = variant)) + geom_line() + ylim(0, NA) + labs(x = "Rep", y = "Runtime [ms]", linetype = "Variant", color = "Variant", title = "b) Query runtime during table scan") + guides(linetype = "none", color = "none") + scale_linetype_discrete(drop = FALSE) + scale_color_discrete(drop = FALSE)
@@ -255,51 +258,51 @@ for (analysis in levels(metrics[["analysis"]])) {
             next
         }
 
-        outputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
-        dir.create(outputDir, showWarnings = FALSE, recursive = TRUE)
+        variantOutputDir <- paste0(outputBaseDir, "/", analysis, "/", variant)
+        dir.create(variantOutputDir, showWarnings = FALSE, recursive = TRUE)
 
         ggplot(sarSubset, aes(timestamp, cpu_percent_user)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %user", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
-        ggsave(paste0(outputDir, "/sar_cpu_user.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_cpu_user.pdf"), title = paste0(analysis, "/", variant, "/cpu/%user"))
+        ggsave(paste0(variantOutputDir, "/sar_cpu_user.svg"))
 
         ggplot(sarSubset, aes(timestamp, cpu_percent_system)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %system", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_cpu_system.pdf"), title = paste0(analysis, "/", variant, "/cpu/%system"))
-        ggsave(paste0(outputDir, "/sar_cpu_system.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_cpu_system.pdf"), title = paste0(analysis, "/", variant, "/cpu/%system"))
+        ggsave(paste0(variantOutputDir, "/sar_cpu_system.svg"))
 
         ggplot(sarSubset, aes(timestamp, cpu_percent_idle)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "CPU: %idle", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_cpu_idle.pdf"), title = paste0(analysis, "/", variant, "/cpu/%idle"))
-        ggsave(paste0(outputDir, "/sar_cpu_idle.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_cpu_idle.pdf"), title = paste0(analysis, "/", variant, "/cpu/%idle"))
+        ggsave(paste0(variantOutputDir, "/sar_cpu_idle.svg"))
 
         ggplot(sarSubset, aes(timestamp, mem_percent_used)) + geom_point() + ylim(0, 100) + labs(x = "Time in UTC", title = "RAM: %memused", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_mem_memused.pdf"), title = paste0(analysis, "/", variant, "/mem/%memused"))
-        ggsave(paste0(outputDir, "/sar_mem_memused.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_mem_memused.pdf"), title = paste0(analysis, "/", variant, "/mem/%memused"))
+        ggsave(paste0(variantOutputDir, "/sar_mem_memused.svg"))
 
         ggplot(sarSubset, aes(timestamp, io_tps)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: tps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_io_tps.pdf"), title = paste0(analysis, "/", variant, "/io/tps"))
-        ggsave(paste0(outputDir, "/sar_io_tps.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_io_tps.pdf"), title = paste0(analysis, "/", variant, "/io/tps"))
+        ggsave(paste0(variantOutputDir, "/sar_io_tps.svg"))
 
         ggplot(sarSubset, aes(timestamp, io_rtps)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: rtps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_io_rtps.pdf"), title = paste0(analysis, "/", variant, "/io/rtps"))
-        ggsave(paste0(outputDir, "/sar_io_rtps.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_io_rtps.pdf"), title = paste0(analysis, "/", variant, "/io/rtps"))
+        ggsave(paste0(variantOutputDir, "/sar_io_rtps.svg"))
 
         ggplot(sarSubset, aes(timestamp, io_wtps)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "I/O: wtps", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_io_wtps.pdf"), title = paste0(analysis, "/", variant, "/io/wtps"))
-        ggsave(paste0(outputDir, "/sar_io_wtps.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_io_wtps.pdf"), title = paste0(analysis, "/", variant, "/io/wtps"))
+        ggsave(paste0(variantOutputDir, "/sar_io_wtps.svg"))
 
         ggplot(sarSubset, aes(timestamp, disk_await)) + geom_point() + ylim(0, NA) + labs(x = "Time in UTC", title = "Disk: await", subtitle = paste0(analysis, "/", variant))
-        ggsave(paste0(outputDir, "/sar_disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
-        ggsave(paste0(outputDir, "/sar_disk_await.svg"))
+        ggsave(paste0(variantOutputDir, "/sar_disk_await.pdf"), title = paste0(analysis, "/", variant, "/disk/await"))
+        ggsave(paste0(variantOutputDir, "/sar_disk_await.svg"))
 
         traceSubset <- trace[trace[["analysis"]] == analysis & trace[["variant"]] == variant, ]
 
         p_op <- ggplot(traceSubset[traceSubset[["type"]] == "op", ], aes(rep, fill = req)) + geom_bar(width = 1) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
-        ggsave(paste0(outputDir, "/trace_op.pdf"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)), title = paste0(analysis, "/", variant, "/trace_op"))
-        ggsave(paste0(outputDir, "/trace_op.svg"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)))
+        ggsave(paste0(variantOutputDir, "/trace_op.pdf"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)), title = paste0(analysis, "/", variant, "/trace_op"))
+        ggsave(paste0(variantOutputDir, "/trace_op.svg"), plot = p_op + labs(title = "MinIO: Number of S3 requests during update operation", subtitle = paste0(analysis, ": ", variant)))
         traceOpPlots <- c(traceOpPlots, list(p_op + labs(title = variant)))
 
         p_select <- ggplot(traceSubset[traceSubset[["type"]] == "select", ], aes(rep, fill = req)) + geom_bar(width = 1) + ylim(0, NA) + labs(x = "Rep", y = "Number of requests", fill = "Operation") + scale_fill_discrete(drop = FALSE)
-        ggsave(paste0(outputDir, "/trace_select.pdf"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)), title = paste0(analysis, "/", variant, "/trace_select"))
-        ggsave(paste0(outputDir, "/trace_select.svg"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)))
+        ggsave(paste0(variantOutputDir, "/trace_select.pdf"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)), title = paste0(analysis, "/", variant, "/trace_select"))
+        ggsave(paste0(variantOutputDir, "/trace_select.svg"), plot = p_select + labs(title = "MinIO: Number of S3 requests during table scan", subtitle = paste0(analysis, " / ", variant)))
         traceSelectPlots <- c(traceSelectPlots, list(p_select + labs(title = variant)))
 
     }
@@ -311,8 +314,8 @@ for (analysis in levels(metrics[["analysis"]])) {
     traceOpPlots <- c(traceOpPlots, list(legend))
     traceOpPlots <- c(traceOpPlots, list(ncol = 2))
     p_op <- do.call(arrangeGrob, traceOpPlots)
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op_reqs.pdf"), plot = p_op, title = analysis, width = 10, height = 15)
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_op_reqs.svg"), plot = p_op, width = 10, height = 15)
+    ggsave(paste0(analysisOutputDir, "/trace_op_reqs.pdf"), plot = p_op, title = analysis, width = 10, height = 15)
+    ggsave(paste0(analysisOutputDir, "/trace_op_reqs.svg"), plot = p_op, width = 10, height = 15)
 
     legend <- get_legend(traceSelectPlots[[1]])
     for (i in seq_along(traceSelectPlots)) {
@@ -321,8 +324,8 @@ for (analysis in levels(metrics[["analysis"]])) {
     traceSelectPlots <- c(traceSelectPlots, list(legend))
     traceSelectPlots <- c(traceSelectPlots, list(ncol = 2))
     p_select <- do.call(arrangeGrob, traceSelectPlots)
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select_reqs.pdf"), plot = p_select, title = analysis, width = 10, height = 15)
-    ggsave(paste0(outputBaseDir, "/", analysis, " trace_select_reqs.svg"), plot = p_select, width = 10, height = 15)
+    ggsave(paste0(analysisOutputDir, "/trace_select_reqs.pdf"), plot = p_select, title = analysis, width = 10, height = 15)
+    ggsave(paste0(analysisOutputDir, "/trace_select_reqs.svg"), plot = p_select, width = 10, height = 15)
 
 }
 
