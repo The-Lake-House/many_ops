@@ -195,6 +195,11 @@ for (analysis in levels(metrics[["analysis"]])) {
 
     metricsSubset <- metrics[metrics[["analysis"]] == analysis, ]
 
+    if (nrow(metricsSubset) == 0) {
+        warning("Skipped ", analysis, " - no data")
+        next
+    }
+
     analysisOutputDir <- paste0(outputBaseDir, "/", analysis)
     dir.create(analysisOutputDir, showWarnings = FALSE, recursive = TRUE)
 
