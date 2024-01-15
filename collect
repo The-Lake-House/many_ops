@@ -40,10 +40,10 @@ for INPUT_DIR in "$INPUT_BASE_DIR"/*/*; do
     done
 
     # runtime_op
-    paste <(grep -h SparkListenerSQLExecutionStart "$INPUT_DIR"/runtime_op/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') <(grep -h SparkListenerSQLExecutionEnd "$INPUT_DIR"/runtime_op/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_op
+    paste <(jq --slurp 'map(select(.Event == "org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart" and .executionId == 1) | .time) | .[]' "$INPUT_DIR"/runtime_op/*) <(jq --slurp 'map(select(.Event == "org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd" and .executionId == 1) | .time) | .[]' "$INPUT_DIR"/runtime_op/*) | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_op
 
     # runtime_select
-    paste <(grep -h SparkListenerSQLExecutionStart "$INPUT_DIR"/runtime_select/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') <(grep -h SparkListenerSQLExecutionEnd "$INPUT_DIR"/runtime_select/* | jq --slurp 'map(select(.executionId == 1) | .time) | .[]') | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_select
+    paste <(jq --slurp 'map(select(.Event == "org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart" and .executionId == 1) | .time) | .[]' "$INPUT_DIR"/runtime_select/*) <(jq --slurp 'map(select(.Event == "org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd" and .executionId == 1) | .time) | .[]' "$INPUT_DIR"/runtime_select/*) | awk '{print $2 - $1}' > "$OUTPUT_DIR"/runtime_select
 
     # sar
     sadf -d "$INPUT_DIR"/sar/benchmark.sar -- -u > "$OUTPUT_DIR"/sar_cpu
