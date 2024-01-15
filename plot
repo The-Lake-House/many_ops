@@ -5,10 +5,13 @@ library(ggplot2)
 library(gridExtra)
 
 get_legend <- function(plot) {
-  tmp <- ggplot_gtable(ggplot_build(plot))
-  leg <- which(sapply(tmp[["grobs"]], `[[`, "name") == "guide-box")
-  legend <- tmp[["grobs"]][[leg]]
-  return(legend)
+    # ggplot_gtable opens a blank display device, duh
+    pdf(file = NULL)
+    gtable <- ggplot_gtable(ggplot_build(plot))
+    dev.off()
+    leg <- which(sapply(gtable[["grobs"]], `[[`, "name") == "guide-box")
+    legend <- gtable[["grobs"]][[leg]]
+    return(legend)
 }
 
 argv <- commandArgs(trailingOnly = TRUE)
